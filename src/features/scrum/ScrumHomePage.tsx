@@ -116,27 +116,6 @@ async function requestJson<T>(path: string, init?: RequestInit) {
   return (await response.json()) as T;
 }
 
-function formatRemainingTime(task: ScrumTask, now: number) {
-  if (task.status !== "in_progress" || !task.startedAt) {
-    return formatMinutes(task.estimatedMinutes);
-  }
-
-  const elapsedSeconds = Math.max(0, Math.floor((now - task.startedAt) / 1000));
-  const remainingSeconds = Math.max(0, task.estimatedMinutes * 60 - elapsedSeconds);
-  const hours = Math.floor(remainingSeconds / 3600);
-  const minutes = Math.floor((remainingSeconds % 3600) / 60);
-  const seconds = remainingSeconds % 60;
-
-  return `${String(hours)}h:${String(minutes).padStart(2, "0")}m:${String(seconds).padStart(2, "0")}s`;
-}
-
-function formatMinutes(totalMinutes: number) {
-  const safeMinutes = Math.max(0, Math.floor(totalMinutes));
-  const hours = Math.floor(safeMinutes / 60);
-  const minutes = safeMinutes % 60;
-  return `${hours}h:${String(minutes).padStart(2, "0")}m`;
-}
-
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-UY", {
     style: "currency",
@@ -228,7 +207,6 @@ export function ScrumHomePage() {
   const [tasks, setTasks] = useState<ScrumTask[]>(INITIAL_TASKS);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [estimatedHours, setEstimatedHours] = useState("4");
   const [difficulty, setDifficulty] = useState<TaskDifficulty>("green");
   const [now, setNow] = useState(() => Date.now());
   const [viewMode, setViewMode] = useState<ViewMode>("board");
@@ -314,8 +292,7 @@ export function ScrumHomePage() {
     event.preventDefault();
 
     const normalizedTitle = title.trim();
-    const parsedHours = Number(estimatedHours);
-    if (!normalizedTitle || !Number.isFinite(parsedHours) || parsedHours <= 0) {
+    if (!normalizedTitle) {
       return;
     }
 
@@ -325,7 +302,6 @@ export function ScrumHomePage() {
         body: JSON.stringify({
           title: normalizedTitle,
           description: description.trim() || undefined,
-          estimatedMinutes: Math.round(parsedHours * 60),
           difficulty
         })
       });
@@ -333,7 +309,6 @@ export function ScrumHomePage() {
       setTasks((currentTasks) => [response.item, ...currentTasks]);
       setTitle("");
       setDescription("");
-      setEstimatedHours("4");
       setDifficulty("green");
       setFeedbackMessage(null);
     } catch {
@@ -508,21 +483,6 @@ export function ScrumHomePage() {
           </div>
 
           <div style={fieldGroupStyle}>
-            <label style={labelStyle} htmlFor="task-hours">
-              Tiempo estimado
-            </label>
-            <input
-              id="task-hours"
-              type="number"
-              min="0.25"
-              step="0.25"
-              value={estimatedHours}
-              onChange={(event) => setEstimatedHours(event.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={fieldGroupStyle}>
             <label style={labelStyle} htmlFor="task-difficulty">
               Dificultad
             </label>
@@ -598,11 +558,6 @@ export function ScrumHomePage() {
                         </span>
                       </div>
 
-                      <div style={taskMetaGridStyle}>
-                        <span style={metaChipStyle}>Estimado: {formatMinutes(task.estimatedMinutes)}</span>
-                        <span style={metaChipStyle}>Reloj: {formatRemainingTime(task, now)}</span>
-                      </div>
-
                       <div style={taskFooterStyle}>
                         <span style={statusPillStyle(task.status)}>
                           {task.status === "todo" ? "Pendiente" : task.status === "in_progress" ? "En curso" : "Finalizada"}
@@ -656,9 +611,7 @@ export function ScrumHomePage() {
                       <div key={task.id} style={historyTaskRowStyle}>
                         <div style={{ display: "grid", gap: 4 }}>
                           <strong style={{ fontSize: 14 }}>{task.title}</strong>
-                          <span style={metaChipStyle}>
-                            {formatMinutes(task.estimatedMinutes)} | {DIFFICULTY_LABELS[task.difficulty]}
-                          </span>
+                          {task.description ? <span style={taskDescriptionStyle}>{task.description}</span> : null}
                         </div>
                         <span
                           style={{
@@ -882,7 +835,7 @@ const controlStripStyle: React.CSSProperties = {
 
 const formGridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "minmax(220px, 1.7fr) minmax(220px, 1.7fr) minmax(140px, 0.7fr) minmax(160px, 0.8fr) auto",
+  gridTemplateColumns: "minmax(220px, 2fr) minmax(220px, 2fr) minmax(180px, 1fr) auto",
   gap: 14,
   alignItems: "end"
 };
@@ -1042,11 +995,6 @@ const difficultyBadgeStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 800,
   whiteSpace: "nowrap"
-};
-
-const taskMetaGridStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 8
 };
 
 const metaChipStyle: React.CSSProperties = {
