@@ -24,48 +24,9 @@ type ClientBilling = {
   nextPaymentAt: string;
 };
 
-const INITIAL_TASKS: ScrumTask[] = [
-  {
-    id: 1,
-    title: "Definir primer flujo Scrum",
-    estimatedMinutes: 240,
-    difficulty: "yellow",
-    status: "todo",
-    startedAt: null,
-    completedAt: null
-  }
-];
+const INITIAL_TASKS: ScrumTask[] = [];
 
-const INITIAL_CLIENTS: ClientBilling[] = [
-  {
-    id: 1,
-    name: "Juan Perez",
-    amount: 18000,
-    frequency: "semiannual",
-    nextPaymentAt: "2026-08-20"
-  },
-  {
-    id: 2,
-    name: "Farmacia Centro",
-    amount: 4200,
-    frequency: "monthly",
-    nextPaymentAt: "2026-08-01"
-  },
-  {
-    id: 3,
-    name: "La Milagrosa",
-    amount: 9500,
-    frequency: "monthly",
-    nextPaymentAt: "2026-07-10"
-  },
-  {
-    id: 4,
-    name: "Estudio Norte",
-    amount: 12000,
-    frequency: "semiannual",
-    nextPaymentAt: "2026-07-02"
-  }
-];
+const INITIAL_CLIENTS: ClientBilling[] = [];
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: "Tareas para realizar",
@@ -341,6 +302,11 @@ export function ScrumHomePage() {
           : client
       )
     );
+  }
+
+  function handleDeleteClient(clientId: number) {
+    setClients((currentClients) => currentClients.filter((client) => client.id !== clientId));
+    setExpandedClientId((currentExpandedId) => (currentExpandedId === clientId ? null : currentExpandedId));
   }
 
   function handleCreateClient(event: React.FormEvent<HTMLFormElement>) {
@@ -661,6 +627,8 @@ export function ScrumHomePage() {
             </section>
 
             <div style={clientGridStyle}>
+              {clients.length === 0 ? <p style={emptyStateStyle}>Todavia no hay clientes cargados.</p> : null}
+
               {clients.map((client) => {
                 const alertState = getClientAlertState(client.nextPaymentAt, now);
                 const alertStyle = CLIENT_ALERT_STYLES[alertState];
@@ -710,6 +678,13 @@ export function ScrumHomePage() {
                             style={secondaryButtonStyle}
                           >
                             Registrar pago
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteClient(client.id)}
+                            style={deleteButtonStyle}
+                          >
+                            Eliminar cliente
                           </button>
                         </div>
                       </div>
