@@ -31,9 +31,23 @@ type ClientBilling = {
   nextPaymentAt: string;
 };
 
+type BoardTimerHistoryEntry = {
+  dayKey: string;
+  totalSeconds: number;
+};
+
+type BoardTimerSnapshot = {
+  dayKey: string;
+  trackedSeconds: number;
+  timerStartedAt: number | null;
+  history: BoardTimerHistoryEntry[];
+};
+
 const INITIAL_TASKS: ScrumTask[] = [];
 
 const INITIAL_CLIENTS: ClientBilling[] = [];
+
+const BOARD_TIMER_STORAGE_KEY = "frontend-scrum-board-timer";
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: "Tareas para realizar",
@@ -186,6 +200,20 @@ function getMontevideoDateKey(dateValue: number) {
   }).format(new Date(dateValue));
 }
 
+function getMontevideoDayStart(dayKey: string) {
+  return new Date(`${dayKey}T00:00:00-03:00`).getTime();
+}
+
+function formatHistoryDay(dayKey: string) {
+  return new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(`${dayKey}T00:00:00-03:00`));
+}
+
 function formatTaskDuration(durationUnit: TaskDurationUnit, durationValue: number) {
   if (durationUnit === "days") {
     return durationValue === 1 ? "1 dia" : `${durationValue} dias`;
@@ -276,6 +304,85 @@ function formatTrackedTime(totalSeconds: number) {
   return `${hours}:${paddedMinutes}:${paddedSeconds}`;
 }
 
+function mergeBoardTimerHistory(history: BoardTimerHistoryEntry[], entry: BoardTimerHistoryEntry) {
+  const nextHistory = [...history];
+  const existingIndex = nextHistory.findIndex((currentEntry) => currentEntry.dayKey === entry.dayKey);
+
+  if (existingIndex >= 0) {
+    nextHistory[existingIndex] = entry;
+  } else {
+    nextHistory.push(entry);
+  }
+
+  return nextHistory.sort((left, right) => right.dayKey.localeCompare(left.dayKey));
+}
+
+function getInitialBoardTimerState(now: number): BoardTimerSnapshot {
+  const todayKey = getMontevideoDateKey(now);
+
+  if (typeof window === "undefined") {
+    return {
+      dayKey: todayKey,
+      trackedSeconds: 0,
+      timerStartedAt: null,
+      history: []
+    };
+  }
+
+  try {
+    const rawSnapshot = window.localStorage.getItem(BOARD_TIMER_STORAGE_KEY);
+    if (!rawSnapshot) {
+      return {
+        dayKey: todayKey,
+        trackedSeconds: 0,
+        timerStartedAt: null,
+        history: []
+      };
+    }
+
+    const parsedSnapshot = JSON.parse(rawSnapshot) as Partial<BoardTimerSnapshot>;
+    const dayKey = typeof parsedSnapshot.dayKey === "string" ? parsedSnapshot.dayKey : todayKey;
+    const trackedSeconds = Number.isFinite(parsedSnapshot.trackedSeconds)
+      ? Math.max(0, Math.floor(parsedSnapshot.trackedSeconds as number))
+      : 0;
+    const timerStartedAt =
+      Number.isFinite(parsedSnapshot.timerStartedAt) && parsedSnapshot.timerStartedAt
+        ? Number(parsedSnapshot.timerStartedAt)
+        : null;
+    const history = Array.isArray(parsedSnapshot.history)
+      ? parsedSnapshot.history
+          .filter((entry): entry is BoardTimerHistoryEntry => Boolean(entry && typeof entry.dayKey === "string"))
+          .map((entry) => ({
+            dayKey: entry.dayKey,
+            totalSeconds: Math.max(0, Math.floor(Number(entry.totalSeconds) || 0))
+          }))
+      : [];
+
+    if (dayKey === todayKey) {
+      return { dayKey, trackedSeconds, timerStartedAt, history };
+    }
+
+    const nextMidnight = getMontevideoDayStart(dayKey) + 24 * 60 * 60 * 1000;
+    const archivedSeconds = timerStartedAt
+      ? trackedSeconds + Math.max(0, Math.floor((nextMidnight - timerStartedAt) / 1000))
+      : trackedSeconds;
+
+    return {
+      dayKey: todayKey,
+      trackedSeconds: 0,
+      timerStartedAt: timerStartedAt ? now : null,
+      history: archivedSeconds > 0 ? mergeBoardTimerHistory(history, { dayKey, totalSeconds: archivedSeconds }) : history
+    };
+  } catch {
+    return {
+      dayKey: todayKey,
+      trackedSeconds: 0,
+      timerStartedAt: null,
+      history: []
+    };
+  }
+}
+
 function getTaskPriority(task: ScrumTask) {
   switch (task.difficulty) {
     case "blue":
@@ -333,11 +440,11 @@ export function ScrumHomePage() {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
   const [editingDurationValue, setEditingDurationValue] = useState("1");
-  const [boardTrackedSeconds, setBoardTrackedSeconds] = useState(0);
-  const [boardTimerStartedAt, setBoardTimerStartedAt] = useState<number | null>(null);
+  const [boardTimerState, setBoardTimerState] = useState(() => getInitialBoardTimerState(Date.now()));
   const currentDayKey = getMontevideoDateKey(now);
   const boardElapsedSeconds =
-    boardTrackedSeconds + (boardTimerStartedAt ? Math.max(0, Math.floor((now - boardTimerStartedAt) / 1000)) : 0);
+    boardTimerState.trackedSeconds +
+    (boardTimerState.timerStartedAt ? Math.max(0, Math.floor((now - boardTimerState.timerStartedAt) / 1000)) : 0);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -367,6 +474,45 @@ export function ScrumHomePage() {
 
     void loadWorkspace();
   }, [currentDayKey]);
+
+  useEffect(() => {
+    if (boardTimerState.dayKey === currentDayKey) {
+      return;
+    }
+
+    const archivedSeconds = boardTimerState.timerStartedAt
+      ? boardTimerState.trackedSeconds + Math.max(0, Math.floor((now - boardTimerState.timerStartedAt) / 1000))
+      : boardTimerState.trackedSeconds;
+
+    setBoardTimerState((currentState) => ({
+      dayKey: currentDayKey,
+      trackedSeconds: 0,
+      timerStartedAt: currentState.timerStartedAt ? now : null,
+      history:
+        archivedSeconds > 0
+          ? mergeBoardTimerHistory(currentState.history, {
+              dayKey: currentState.dayKey,
+              totalSeconds: archivedSeconds
+            })
+          : currentState.history
+    }));
+  }, [boardTimerState.dayKey, boardTimerState.timerStartedAt, boardTimerState.trackedSeconds, currentDayKey, now]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      BOARD_TIMER_STORAGE_KEY,
+      JSON.stringify({
+        dayKey: boardTimerState.dayKey,
+        trackedSeconds: boardTimerState.trackedSeconds,
+        timerStartedAt: boardTimerState.timerStartedAt,
+        history: boardTimerState.history
+      } satisfies BoardTimerSnapshot)
+    );
+  }, [boardTimerState]);
 
   const groupedTasks = useMemo(
     () => ({
@@ -408,6 +554,15 @@ export function ScrumHomePage() {
 
     return Array.from(grouped.values());
   }, [tasks]);
+
+  const boardTimerHistory = useMemo(
+    () =>
+      boardTimerState.history.map((entry) => ({
+        ...entry,
+        dateLabel: formatHistoryDay(entry.dayKey)
+      })),
+    [boardTimerState.history]
+  );
 
   async function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -584,15 +739,22 @@ export function ScrumHomePage() {
   }
 
   function handleBoardTimerToggle() {
-    if (boardTimerStartedAt) {
-      const totalWorkedSeconds = boardTrackedSeconds + Math.max(0, Math.floor((Date.now() - boardTimerStartedAt) / 1000));
-      setBoardTrackedSeconds(totalWorkedSeconds);
-      setBoardTimerStartedAt(null);
+    if (boardTimerState.timerStartedAt) {
+      const totalWorkedSeconds =
+        boardTimerState.trackedSeconds + Math.max(0, Math.floor((Date.now() - boardTimerState.timerStartedAt) / 1000));
+      setBoardTimerState((currentState) => ({
+        ...currentState,
+        trackedSeconds: totalWorkedSeconds,
+        timerStartedAt: null
+      }));
       setFeedbackMessage(`Tiempo trabajado total: ${formatTrackedTime(totalWorkedSeconds)}`);
       return;
     }
 
-    setBoardTimerStartedAt(Date.now());
+    setBoardTimerState((currentState) => ({
+      ...currentState,
+      timerStartedAt: Date.now()
+    }));
     setFeedbackMessage(null);
   }
 
@@ -603,9 +765,16 @@ export function ScrumHomePage() {
           <div style={titleRowStyle}>
             <h1 style={titleStyle}>Scrum</h1>
             <div style={boardTimerWrapStyle}>
-              <span style={boardTimerValueStyle}>{formatTrackedTime(boardElapsedSeconds)}</span>
-              <button type="button" onClick={handleBoardTimerToggle} style={boardTimerButtonStyle(Boolean(boardTimerStartedAt))}>
-                {boardTimerStartedAt ? "Detener cronometro" : "Iniciar cronometro"}
+              <div style={boardTimerPanelStyle}>
+                <span style={boardTimerCaptionStyle}>Hoy</span>
+                <span style={boardTimerValueStyle}>{formatTrackedTime(boardElapsedSeconds)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleBoardTimerToggle}
+                style={boardTimerButtonStyle(Boolean(boardTimerState.timerStartedAt))}
+              >
+                {boardTimerState.timerStartedAt ? "Detener cronometro" : "Iniciar cronometro"}
               </button>
             </div>
           </div>
@@ -845,6 +1014,31 @@ export function ScrumHomePage() {
               <span style={columnCaptionStyle}>Aca ves por dia las tareas que ya pasaron a finalizadas.</span>
             </div>
           </header>
+
+          <section style={timerHistoryPanelStyle}>
+            <div style={timerHistoryHeaderStyle}>
+              <div style={{ display: "grid", gap: 4 }}>
+                <strong style={{ fontSize: 17 }}>Tiempo trabajado</strong>
+                <span style={columnCaptionStyle}>Se reinicia a las 00:00 de Uruguay y guarda el total del dia.</span>
+              </div>
+              <span style={boardTimerSummaryStyle}>{formatTrackedTime(boardElapsedSeconds)}</span>
+            </div>
+
+            <div style={historyListStyle}>
+              {boardTimerHistory.length === 0 ? (
+                <p style={emptyStateStyle}>Todavia no hay dias guardados en el cronometro.</p>
+              ) : null}
+
+              {boardTimerHistory.map((entry) => (
+                <article key={entry.dayKey} style={historyCardStyle}>
+                  <div style={historyDayHeaderStyle}>
+                    <strong style={{ fontSize: 16, textTransform: "capitalize" }}>{entry.dateLabel}</strong>
+                    <span style={boardTimerSummaryStyle}>{formatTrackedTime(entry.totalSeconds)}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <div style={historyListStyle}>
             {completedHistory.length === 0 ? <p style={emptyStateStyle}>Todavia no hay tareas finalizadas para registrar.</p> : null}
@@ -1112,6 +1306,19 @@ const boardTimerWrapStyle: React.CSSProperties = {
   justifyContent: "flex-end"
 };
 
+const boardTimerPanelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 4,
+  justifyItems: "end"
+};
+
+const boardTimerCaptionStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 700,
+  color: "#5f6b80",
+  textTransform: "uppercase"
+};
+
 const boardTimerValueStyle: React.CSSProperties = {
   minWidth: 108,
   minHeight: 42,
@@ -1124,6 +1331,20 @@ const boardTimerValueStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   fontSize: 18,
+  fontWeight: 800
+};
+
+const boardTimerSummaryStyle: React.CSSProperties = {
+  minHeight: 32,
+  padding: "0 12px",
+  borderRadius: 999,
+  border: "1px solid #d7dfeb",
+  background: "#ffffff",
+  color: "#162033",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 14,
   fontWeight: 800
 };
 
@@ -1498,6 +1719,23 @@ const historyPanelStyle: React.CSSProperties = {
   padding: 18,
   display: "grid",
   gap: 16
+};
+
+const timerHistoryPanelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 14,
+  padding: 18,
+  background: "#f8fbff",
+  border: "1px solid #d7dfeb",
+  borderRadius: 8
+};
+
+const timerHistoryHeaderStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap"
 };
 
 const historyHeaderStyle: React.CSSProperties = {
