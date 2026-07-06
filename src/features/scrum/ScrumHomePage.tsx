@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { API_BASE_URL } from "../../shared/config/api";
 
 type TaskStatus = "todo" | "in_progress" | "done";
 type TaskDifficulty = "green" | "yellow" | "red";
@@ -90,6 +91,22 @@ const BILLING_FREQUENCY_LABELS: Record<BillingFrequency, string> = {
   semiannual: "Cada 6 meses"
 };
 
+async function requestJson<T>(path: string, init?: RequestInit) {
+  const response = await fetch(`${API_BASE_URL}/api/v1${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers || {})
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as T;
+}
+
 function formatRemainingTime(task: ScrumTask, now: number) {
   if (task.status !== "in_progress" || !task.startedAt) {
     return formatMinutes(task.estimatedMinutes);
@@ -126,12 +143,6 @@ function formatDate(value: string) {
     month: "2-digit",
     year: "numeric"
   }).format(new Date(`${value}T00:00:00`));
-}
-
-function addBillingCycle(dateValue: string, frequency: BillingFrequency) {
-  const nextDate = new Date(`${dateValue}T00:00:00`);
-  nextDate.setMonth(nextDate.getMonth() + (frequency === "monthly" ? 1 : 6));
-  return nextDate.toISOString().slice(0, 10);
 }
 
 function getClientAlertState(nextPaymentAt: string, now: number): ClientAlertState {
@@ -208,6 +219,8 @@ export function ScrumHomePage() {
   const [clientAmount, setClientAmount] = useState("");
   const [clientFrequency, setClientFrequency] = useState<BillingFrequency>("monthly");
   const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
+  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -217,6 +230,25 @@ export function ScrumHomePage() {
     return () => {
       window.clearInterval(intervalId);
     };
+  }, []);
+
+  useEffect(() => {
+    async function loadWorkspace() {
+      try {
+        setIsLoadingWorkspace(true);
+        const response = await requestJson<{ ok: boolean; tasks: ScrumTask[]; clients: ClientBilling[] }>("/scrum/workspace");
+        setTasks(response.tasks || []);
+        setClients(response.clients || []);
+        setExpandedClientId((response.clients || [])[0]?.id ?? null);
+        setFeedbackMessage(null);
+      } catch {
+        setFeedbackMessage("No se pudo cargar la informacion de Scrum.");
+      } finally {
+        setIsLoadingWorkspace(false);
+      }
+    }
+
+    void loadWorkspace();
   }, []);
 
   const groupedTasks = useMemo(
@@ -258,7 +290,7 @@ export function ScrumHomePage() {
     return Array.from(grouped.values());
   }, [tasks]);
 
-  function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
+  async function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const normalizedTitle = title.trim();
@@ -267,49 +299,92 @@ export function ScrumHomePage() {
       return;
     }
 
-    const nextTask: ScrumTask = {
-      id: tasks.length ? Math.max(...tasks.map((task) => task.id)) + 1 : 1,
-      title: normalizedTitle,
-      estimatedMinutes: Math.round(parsedHours * 60),
-      difficulty,
-      status: "todo",
-      startedAt: null,
-      completedAt: null
-    };
+    try {
+      const response = await requestJson<{ ok: boolean; item: ScrumTask }>("/scrum/tasks", {
+        method: "POST",
+        body: JSON.stringify({
+          title: normalizedTitle,
+          estimatedMinutes: Math.round(parsedHours * 60),
+          difficulty
+        })
+      });
 
-    setTasks((currentTasks) => [nextTask, ...currentTasks]);
-    setTitle("");
-    setEstimatedHours("4");
-    setDifficulty("green");
+      setTasks((currentTasks) => [response.item, ...currentTasks]);
+      setTitle("");
+      setEstimatedHours("4");
+      setDifficulty("green");
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo crear la tarea.");
+    }
   }
 
-  function handleAdvanceTask(taskId: number) {
-    setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? moveTaskStatus(task) : task)));
+  async function handleAdvanceTask(taskId: number) {
+    const currentTask = tasks.find((task) => task.id === taskId);
+    if (!currentTask) {
+      return;
+    }
+
+    const nextTask = moveTaskStatus(currentTask);
+
+    try {
+      const response = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: nextTask.status,
+          startedAt: nextTask.startedAt ? new Date(nextTask.startedAt).toISOString() : null,
+          completedAt: nextTask.completedAt ? new Date(nextTask.completedAt).toISOString() : null
+        })
+      });
+
+      setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo actualizar la tarea.");
+    }
   }
 
-  function handleDeleteTask(taskId: number) {
-    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
+  async function handleDeleteTask(taskId: number) {
+    try {
+      await requestJson<{ ok: boolean }>(`/scrum/tasks/${taskId}`, {
+        method: "DELETE"
+      });
+      setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo borrar la tarea.");
+    }
   }
 
-  function handleRegisterClientPayment(clientId: number) {
-    setClients((currentClients) =>
-      currentClients.map((client) =>
-        client.id === clientId
-          ? {
-              ...client,
-              nextPaymentAt: addBillingCycle(client.nextPaymentAt, client.frequency)
-            }
-          : client
-      )
-    );
+  async function handleRegisterClientPayment(clientId: number) {
+    try {
+      const response = await requestJson<{ ok: boolean; item: ClientBilling }>(`/scrum/clients/${clientId}/payment`, {
+        method: "PATCH"
+      });
+
+      setClients((currentClients) =>
+        currentClients.map((client) => (client.id === clientId ? response.item : client))
+      );
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo registrar el pago.");
+    }
   }
 
-  function handleDeleteClient(clientId: number) {
-    setClients((currentClients) => currentClients.filter((client) => client.id !== clientId));
-    setExpandedClientId((currentExpandedId) => (currentExpandedId === clientId ? null : currentExpandedId));
+  async function handleDeleteClient(clientId: number) {
+    try {
+      await requestJson<{ ok: boolean }>(`/scrum/clients/${clientId}`, {
+        method: "DELETE"
+      });
+      setClients((currentClients) => currentClients.filter((client) => client.id !== clientId));
+      setExpandedClientId((currentExpandedId) => (currentExpandedId === clientId ? null : currentExpandedId));
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo borrar el cliente.");
+    }
   }
 
-  function handleCreateClient(event: React.FormEvent<HTMLFormElement>) {
+  async function handleCreateClient(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const normalizedName = clientName.trim();
@@ -318,20 +393,27 @@ export function ScrumHomePage() {
       return;
     }
 
-    const nextClient: ClientBilling = {
-      id: clients.length ? Math.max(...clients.map((client) => client.id)) + 1 : 1,
-      name: normalizedName,
-      amount: Math.round(parsedAmount),
-      frequency: clientFrequency,
-      nextPaymentAt: clientNextPaymentAt
-    };
+    try {
+      const response = await requestJson<{ ok: boolean; item: ClientBilling }>("/scrum/clients", {
+        method: "POST",
+        body: JSON.stringify({
+          name: normalizedName,
+          amount: Math.round(parsedAmount),
+          frequency: clientFrequency,
+          nextPaymentAt: clientNextPaymentAt
+        })
+      });
 
-    setClients((currentClients) => [nextClient, ...currentClients]);
-    setExpandedClientId(nextClient.id);
-    setClientName("");
-    setClientAmount("");
-    setClientFrequency("monthly");
-    setClientNextPaymentAt("2026-08-05");
+      setClients((currentClients) => [response.item, ...currentClients]);
+      setExpandedClientId(response.item.id);
+      setClientName("");
+      setClientAmount("");
+      setClientFrequency("monthly");
+      setClientNextPaymentAt("2026-08-05");
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo crear el cliente.");
+    }
   }
 
   return (
@@ -339,6 +421,7 @@ export function ScrumHomePage() {
       <section style={heroStyle}>
         <div style={{ display: "grid", gap: 10 }}>
           <h1 style={titleStyle}>Scrum</h1>
+          {feedbackMessage ? <p style={noticeStyle}>{feedbackMessage}</p> : null}
         </div>
         <div style={headerTabsAlignStyle}>
           <section style={tabsWrapStyle}>
@@ -367,7 +450,13 @@ export function ScrumHomePage() {
         </div>
       </section>
 
-      {viewMode === "board" ? (
+      {isLoadingWorkspace ? (
+        <section style={loadingPanelStyle}>
+          <p style={emptyStateStyle}>Cargando tareas y clientes...</p>
+        </section>
+      ) : null}
+
+      {!isLoadingWorkspace && viewMode === "board" ? (
       <section style={controlStripStyle}>
         <form onSubmit={handleCreateTask} style={formGridStyle}>
           <div style={fieldGroupStyle}>
@@ -423,7 +512,7 @@ export function ScrumHomePage() {
       </section>
       ) : null}
 
-      {viewMode === "board" ? (
+      {!isLoadingWorkspace && viewMode === "board" ? (
         <section style={boardStyle}>
           {(["todo", "in_progress", "done"] as TaskStatus[]).map((statusKey) => (
             <section key={statusKey} style={columnStyle}>
@@ -500,7 +589,7 @@ export function ScrumHomePage() {
             </section>
           ))}
         </section>
-      ) : (
+      ) : !isLoadingWorkspace ? (
         viewMode === "history" ? (
         <section style={historyPanelStyle}>
           <header style={historyHeaderStyle}>
@@ -695,7 +784,7 @@ export function ScrumHomePage() {
             </div>
           </section>
         )
-      )}
+      ) : null}
     </main>
   );
 }
@@ -723,6 +812,17 @@ const titleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: "clamp(32px, 5vw, 44px)",
   lineHeight: 1.05
+};
+
+const noticeStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  color: "#44526b"
+};
+
+const loadingPanelStyle: React.CSSProperties = {
+  width: "min(1240px, 100%)",
+  margin: "0 auto"
 };
 
 const headerTabsAlignStyle: React.CSSProperties = {
@@ -1096,7 +1196,9 @@ const clientDetailsStyle: React.CSSProperties = {
 };
 
 const clientActionsStyle: React.CSSProperties = {
-  display: "flex"
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap"
 };
 
 const clientMetaGridStyle: React.CSSProperties = {
