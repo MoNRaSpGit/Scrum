@@ -304,17 +304,6 @@ function formatTrackedTime(totalSeconds: number) {
   return `${hours}:${paddedMinutes}:${paddedSeconds}`;
 }
 
-function formatTrackedTimeWithMilliseconds(totalMilliseconds: number) {
-  const safeMilliseconds = Math.max(0, Math.floor(totalMilliseconds));
-  const totalSeconds = Math.floor(safeMilliseconds / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const milliseconds = safeMilliseconds % 1000;
-
-  return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
-}
-
 function formatTrackedTimeSummary(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);
@@ -465,14 +454,11 @@ export function ScrumHomePage() {
   const boardElapsedSeconds =
     boardTimerState.trackedSeconds +
     (boardTimerState.timerStartedAt ? Math.max(0, Math.floor((now - boardTimerState.timerStartedAt) / 1000)) : 0);
-  const boardElapsedMilliseconds =
-    boardTimerState.trackedSeconds * 1000 +
-    (boardTimerState.timerStartedAt ? Math.max(0, now - boardTimerState.timerStartedAt) : 0);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setNow(Date.now());
-    }, boardTimerState.timerStartedAt ? 33 : 1000);
+    }, 1000);
 
     return () => {
       window.clearInterval(intervalId);
@@ -801,9 +787,7 @@ export function ScrumHomePage() {
             <div style={boardTimerPanelStyle}>
               <span style={boardTimerCaptionStyle}>{boardTimerState.timerStartedAt ? "En vivo" : "Tiempo acumulado hoy"}</span>
               <span style={boardTimerValueStyle}>
-                {boardTimerState.timerStartedAt
-                  ? formatTrackedTimeWithMilliseconds(boardElapsedMilliseconds)
-                  : formatTrackedTimeSummary(boardElapsedSeconds)}
+                {formatTrackedTimeSummary(boardElapsedSeconds)}
               </span>
             </div>
           </div>
