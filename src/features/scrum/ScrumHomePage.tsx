@@ -10,6 +10,7 @@ type ClientAlertState = "white" | "green" | "yellow" | "red";
 type ScrumTask = {
   id: number;
   title: string;
+  description?: string | null;
   estimatedMinutes: number;
   difficulty: TaskDifficulty;
   status: TaskStatus;
@@ -209,6 +210,7 @@ function moveTaskStatus(task: ScrumTask): ScrumTask {
 export function ScrumHomePage() {
   const [tasks, setTasks] = useState<ScrumTask[]>(INITIAL_TASKS);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("4");
   const [difficulty, setDifficulty] = useState<TaskDifficulty>("green");
   const [now, setNow] = useState(() => Date.now());
@@ -304,6 +306,7 @@ export function ScrumHomePage() {
         method: "POST",
         body: JSON.stringify({
           title: normalizedTitle,
+          description: description.trim() || undefined,
           estimatedMinutes: Math.round(parsedHours * 60),
           difficulty
         })
@@ -311,6 +314,7 @@ export function ScrumHomePage() {
 
       setTasks((currentTasks) => [response.item, ...currentTasks]);
       setTitle("");
+      setDescription("");
       setEstimatedHours("4");
       setDifficulty("green");
       setFeedbackMessage(null);
@@ -473,6 +477,19 @@ export function ScrumHomePage() {
           </div>
 
           <div style={fieldGroupStyle}>
+            <label style={labelStyle} htmlFor="task-description">
+              Descripcion
+            </label>
+            <input
+              id="task-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Opcional"
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={fieldGroupStyle}>
             <label style={labelStyle} htmlFor="task-hours">
               Tiempo estimado
             </label>
@@ -547,7 +564,10 @@ export function ScrumHomePage() {
                       }}
                     >
                       <div style={taskHeaderStyle}>
-                        <strong style={taskTitleStyle}>{task.title}</strong>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          <strong style={taskTitleStyle}>{task.title}</strong>
+                          {task.description ? <span style={taskDescriptionStyle}>{task.description}</span> : null}
+                        </div>
                         <span
                           style={{
                             ...difficultyBadgeStyle,
@@ -843,7 +863,7 @@ const controlStripStyle: React.CSSProperties = {
 
 const formGridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "minmax(220px, 2fr) minmax(140px, 0.7fr) minmax(160px, 0.8fr) auto",
+  gridTemplateColumns: "minmax(220px, 1.7fr) minmax(220px, 1.7fr) minmax(140px, 0.7fr) minmax(160px, 0.8fr) auto",
   gap: 14,
   alignItems: "end"
 };
@@ -986,6 +1006,12 @@ const taskHeaderStyle: React.CSSProperties = {
 const taskTitleStyle: React.CSSProperties = {
   fontSize: 15,
   lineHeight: 1.45
+};
+
+const taskDescriptionStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.5,
+  color: "#5b6982"
 };
 
 const difficultyBadgeStyle: React.CSSProperties = {
