@@ -1,3 +1,4 @@
+const RENDER_API_BASE_URL = "https://saasproback.onrender.com";
 const LOCAL_API_BASE_URL = "http://localhost:3000";
 
 function resolveApiBaseUrl() {
@@ -6,7 +7,14 @@ function resolveApiBaseUrl() {
     return configuredApiBaseUrl;
   }
 
-  return LOCAL_API_BASE_URL;
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return LOCAL_API_BASE_URL;
+    }
+  }
+
+  return RENDER_API_BASE_URL;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
