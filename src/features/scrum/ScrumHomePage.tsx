@@ -1,4 +1,6 @@
 import { BuildMetaCard } from "../../shared/components/BuildMetaCard";
+import { API_BASE_URL } from "../../shared/config/api";
+import { useState } from "react";
 
 const scrumRows = [
   {
@@ -11,6 +13,46 @@ const scrumRows = [
 ];
 
 export function ScrumHomePage() {
+  const [loading, setLoading] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
+
+  async function handleFetchSample() {
+    setLoading(true);
+    setConnectionMessage(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/scrum/sample`);
+      if (!response.ok) {
+        throw new Error("No se pudo consultar Scrum");
+      }
+
+      const payload = (await response.json()) as {
+        ok: boolean;
+        item: {
+          id: number;
+          sprint: string;
+          task: string;
+          status: string;
+          owner: string;
+          createdAt: string;
+        } | null;
+      };
+
+      if (!payload.item) {
+        setConnectionMessage("La conexion funciona, pero no devolvio registros.");
+        return;
+      }
+
+      setConnectionMessage(
+        `BDD conectada: ${payload.item.sprint} | ${payload.item.task} | ${payload.item.status} | ${payload.item.owner}`
+      );
+    } catch (error) {
+      setConnectionMessage(error instanceof Error ? error.message : "Fallo la consulta");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main style={pageStyle}>
       <section style={heroStyle}>
@@ -28,8 +70,15 @@ export function ScrumHomePage() {
             <strong style={{ fontSize: 18 }}>Tabla Scrum</strong>
             <span style={tableCaptionStyle}>Dato inicial de prueba para validar la home y el deploy.</span>
           </div>
-          <span style={counterStyle}>{scrumRows.length} registro</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button type="button" onClick={handleFetchSample} disabled={loading} style={actionButtonStyle}>
+              {loading ? "Consultando..." : "Probar BDD"}
+            </button>
+            <span style={counterStyle}>{scrumRows.length} registro</span>
+          </div>
         </header>
+
+        {connectionMessage ? <p style={feedbackStyle}>{connectionMessage}</p> : null}
 
         <div style={tableWrapStyle}>
           <table style={tableStyle}>
@@ -163,4 +212,26 @@ const tdStyle: React.CSSProperties = {
   lineHeight: 1.5,
   color: "#1c2940",
   borderBottom: "1px solid #e5ebf5"
+};
+
+const actionButtonStyle: React.CSSProperties = {
+  minHeight: 40,
+  padding: "0 14px",
+  border: "none",
+  borderRadius: 8,
+  background: "#1f4ed8",
+  color: "#ffffff",
+  fontWeight: 700,
+  cursor: "pointer"
+};
+
+const feedbackStyle: React.CSSProperties = {
+  margin: 0,
+  padding: "12px 14px",
+  border: "1px solid #dbe4f3",
+  borderRadius: 8,
+  background: "#f7faff",
+  color: "#234051",
+  fontSize: 14,
+  lineHeight: 1.5
 };
