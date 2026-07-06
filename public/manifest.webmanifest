@@ -1,21 +1,22 @@
 {
+  "id": "/Scrum/",
   "name": "Scrum",
   "short_name": "Scrum",
   "description": "Tablero Scrum con tareas, historial y cronometro diario.",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/Scrum/",
+  "scope": "/Scrum/",
   "display": "standalone",
   "background_color": "#f3f6fb",
   "theme_color": "#14213d",
   "icons": [
     {
-      "src": "./icons/scrum-icon.svg",
+      "src": "/Scrum/icons/scrum-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "./icons/scrum-icon-maskable.svg",
+      "src": "/Scrum/icons/scrum-icon-maskable.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

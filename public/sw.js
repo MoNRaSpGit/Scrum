@@ -1,10 +1,25 @@
-const CACHE_NAME = "scrum-pwa-v1";
-const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/scrum-icon.svg", "./icons/scrum-icon-maskable.svg"];
+const CACHE_NAME = "scrum-pwa-v2";
+
+function getBasePath() {
+  const scopeUrl = new URL(self.registration.scope);
+  return scopeUrl.pathname.endsWith("/") ? scopeUrl.pathname : `${scopeUrl.pathname}/`;
+}
+
+function getAppShell() {
+  const basePath = getBasePath();
+  return [
+    basePath,
+    `${basePath}index.html`,
+    `${basePath}manifest.webmanifest`,
+    `${basePath}icons/scrum-icon.svg`,
+    `${basePath}icons/scrum-icon-maskable.svg`
+  ];
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
+      return cache.addAll(getAppShell());
     })
   );
   self.skipWaiting();
@@ -24,6 +39,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const basePath = getBasePath();
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -42,10 +59,10 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => {
           if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
+            return caches.match(`${basePath}index.html`);
           }
 
-          return caches.match("./");
+          return caches.match(basePath);
         });
     })
   );
