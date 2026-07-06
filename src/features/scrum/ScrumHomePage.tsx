@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "../../shared/config/api";
 
 type TaskStatus = "todo" | "in_progress" | "done";
-type TaskDifficulty = "green" | "yellow" | "red";
+type TaskDifficulty = "green" | "yellow" | "red" | "blue";
 type ViewMode = "board" | "history" | "clients";
 type BillingFrequency = "monthly" | "semiannual";
 type ClientAlertState = "white" | "green" | "yellow" | "red";
@@ -13,6 +13,7 @@ type ScrumTask = {
   description?: string | null;
   estimatedMinutes: number;
   difficulty: TaskDifficulty;
+  dailyTaskKey?: string | null;
   status: TaskStatus;
   startedAt: number | null;
   completedAt: number | null;
@@ -40,6 +41,8 @@ const DIFFICULTY_LABELS: Record<TaskDifficulty, string> = {
   green: "Verde",
   yellow: "Amarillo",
   red: "Rojo"
+  ,
+  blue: "Diaria"
 };
 
 const DIFFICULTY_STYLES: Record<TaskDifficulty, { accent: string; background: string; text: string }> = {
@@ -57,6 +60,11 @@ const DIFFICULTY_STYLES: Record<TaskDifficulty, { accent: string; background: st
     accent: "#d64545",
     background: "#fff0f0",
     text: "#9e2b2b"
+  },
+  blue: {
+    accent: "#2b6fe8",
+    background: "#eef4ff",
+    text: "#214fa8"
   }
 };
 
@@ -186,6 +194,15 @@ function getClientRelativeLabel(nextPaymentAt: string, now: number) {
   return months === 1 ? "Falta 1 mes" : `Faltan ${months} meses`;
 }
 
+function getMontevideoDateKey(dateValue: number) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Montevideo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date(dateValue));
+}
+
 function moveTaskStatus(task: ScrumTask): ScrumTask {
   if (task.status === "todo") {
     return {
@@ -223,6 +240,7 @@ export function ScrumHomePage() {
   const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const currentDayKey = getMontevideoDateKey(now);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -251,7 +269,7 @@ export function ScrumHomePage() {
     }
 
     void loadWorkspace();
-  }, []);
+  }, [currentDayKey]);
 
   const groupedTasks = useMemo(
     () => ({
@@ -517,6 +535,7 @@ export function ScrumHomePage() {
               <option value="green">Verde</option>
               <option value="yellow">Amarillo</option>
               <option value="red">Rojo</option>
+              <option value="blue">Diaria</option>
             </select>
           </div>
 
