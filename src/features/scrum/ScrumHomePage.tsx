@@ -13,6 +13,7 @@ type ScrumTask = {
   title: string;
   description?: string | null;
   estimatedMinutes: number;
+  createdAt: number;
   durationUnit: TaskDurationUnit;
   durationValue: number;
   difficulty: TaskDifficulty;
@@ -197,6 +198,51 @@ function formatTaskDuration(durationUnit: TaskDurationUnit, durationValue: numbe
   return durationValue === 1 ? "1 mes" : `${durationValue} meses`;
 }
 
+function getTaskDueAt(task: ScrumTask) {
+  const dueAt = new Date(task.createdAt);
+
+  if (task.durationUnit === "days") {
+    dueAt.setDate(dueAt.getDate() + task.durationValue);
+    return dueAt.getTime();
+  }
+
+  if (task.durationUnit === "weeks") {
+    dueAt.setDate(dueAt.getDate() + task.durationValue * 7);
+    return dueAt.getTime();
+  }
+
+  dueAt.setMonth(dueAt.getMonth() + task.durationValue);
+  return dueAt.getTime();
+}
+
+function formatTaskRemaining(task: ScrumTask, now: number) {
+  const diffMs = getTaskDueAt(task) - now;
+  if (diffMs <= 0) {
+    return "Plazo vencido";
+  }
+
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (totalHours < 24) {
+    return totalHours === 1 ? "Queda 1 hora" : `Quedan ${totalHours} horas`;
+  }
+
+  if (totalDays < 7) {
+    return totalDays === 1 ? "Queda 1 dia" : `Quedan ${totalDays} dias`;
+  }
+
+  const weeks = Math.floor(totalDays / 7);
+  const days = totalDays % 7;
+  if (days === 0) {
+    return weeks === 1 ? "Queda 1 semana" : `Quedan ${weeks} semanas`;
+  }
+
+  const weekLabel = weeks === 1 ? "1 semana" : `${weeks} semanas`;
+  const dayLabel = days === 1 ? "1 dia" : `${days} dias`;
+  return `Quedan ${weekLabel} y ${dayLabel}`;
+}
+
 function getTaskPriority(task: ScrumTask) {
   switch (task.difficulty) {
     case "blue":
@@ -251,9 +297,9 @@ export function ScrumHomePage() {
   const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [durationDrafts, setDurationDrafts] = useState<Record<number, { durationUnit: TaskDurationUnit; durationValue: string }>>(
-    {}
-  );
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
+  const [editingDurationValue, setEditingDurationValue] = useState("1");
   const currentDayKey = getMontevideoDateKey(now);
 
   useEffect(() => {
@@ -407,23 +453,18 @@ export function ScrumHomePage() {
   }
 
   async function handleUpdateTaskDuration(taskId: number) {
-    const draft = durationDrafts[taskId];
-    if (!draft) {
-      return;
-    }
-
-    const parsedDurationValue = Number(draft.durationValue);
+    const parsedDurationValue = Number(editingDurationValue);
     if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
       setFeedbackMessage("El plazo tiene que ser mayor a 0.");
       return;
     }
 
-    if (draft.durationUnit === "days" && parsedDurationValue > 6) {
+    if (editingDurationUnit === "days" && parsedDurationValue > 6) {
       setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
       return;
     }
 
-    if (draft.durationUnit === "weeks" && parsedDurationValue > 4) {
+    if (editingDurationUnit === "weeks" && parsedDurationValue > 4) {
       setFeedbackMessage("Si usas semanas, la cantidad maxima es 4.");
       return;
     }
@@ -432,19 +473,13 @@ export function ScrumHomePage() {
       const response = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/duration`, {
         method: "PATCH",
         body: JSON.stringify({
-          durationUnit: draft.durationUnit,
+          durationUnit: editingDurationUnit,
           durationValue: Math.round(parsedDurationValue)
         })
       });
 
       setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
-      setDurationDrafts((currentDrafts) => ({
-        ...currentDrafts,
-        [taskId]: {
-          durationUnit: response.item.durationUnit,
-          durationValue: String(response.item.durationValue)
-        }
-      }));
+      setEditingTaskId(null);
       setFeedbackMessage(null);
     } catch {
       setFeedbackMessage("No se pudo actualizar el plazo.");
@@ -664,10 +699,6 @@ export function ScrumHomePage() {
                   const difficultyStyle = DIFFICULTY_STYLES[task.difficulty];
                   const canAdvance = task.status !== "done";
                   const expanded = expandedTaskId === task.id;
-                  const durationDraft = durationDrafts[task.id] || {
-                    durationUnit: task.durationUnit,
-                    durationValue: String(task.durationValue)
-                  };
 
                   return (
                     <article
@@ -680,19 +711,13 @@ export function ScrumHomePage() {
                     >
                       <button
                         type="button"
-                        onClick={() => {
-                          setExpandedTaskId(expanded ? null : task.id);
-                          setDurationDrafts((currentDrafts) => ({
-                            ...currentDrafts,
-                            [task.id]: currentDrafts[task.id] || {
-                              durationUnit: task.durationUnit,
-                              durationValue: String(task.durationValue)
-                            }
-                          }));
-                        }}
+                        onClick={() => setExpandedTaskId(expanded ? null : task.id)}
                         style={taskRowButtonStyle}
                       >
-                        <strong style={taskTitleStyle}>{task.title}</strong>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          <strong style={taskTitleStyle}>{task.title}</strong>
+                          <span style={metaChipStyle}>{formatTaskRemaining(task, now)}</span>
+                        </div>
                       </button>
 
                       {expanded ? (
@@ -715,52 +740,23 @@ export function ScrumHomePage() {
                             </span>
                           </div>
 
-                          <div style={taskDurationEditorStyle}>
-                            <select
-                              value={durationDraft.durationUnit}
-                              onChange={(event) =>
-                                setDurationDrafts((currentDrafts) => ({
-                                  ...currentDrafts,
-                                  [task.id]: {
-                                    ...durationDraft,
-                                    durationUnit: event.target.value as TaskDurationUnit
-                                  }
-                                }))
-                              }
-                              style={compactInputStyle}
-                            >
-                              <option value="days">Dias</option>
-                              <option value="weeks">Semanas</option>
-                              <option value="months">Meses</option>
-                            </select>
-                            <input
-                              type="number"
-                              min="1"
-                              max={durationDraft.durationUnit === "days" ? "6" : durationDraft.durationUnit === "weeks" ? "4" : undefined}
-                              step="1"
-                              value={durationDraft.durationValue}
-                              onChange={(event) =>
-                                setDurationDrafts((currentDrafts) => ({
-                                  ...currentDrafts,
-                                  [task.id]: {
-                                    ...durationDraft,
-                                    durationValue: event.target.value
-                                  }
-                                }))
-                              }
-                              style={compactNumberInputStyle}
-                            />
-                            <button type="button" onClick={() => handleUpdateTaskDuration(task.id)} style={secondaryButtonStyle}>
-                              Guardar plazo
-                            </button>
-                          </div>
-
                           <div style={taskFooterStyle}>
                             <span style={statusPillStyle(task.status)}>
                               {task.status === "todo" ? "Pendiente" : task.status === "in_progress" ? "En curso" : "Finalizada"}
                             </span>
 
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTaskId(task.id);
+                                  setEditingDurationUnit(task.durationUnit);
+                                  setEditingDurationValue(String(task.durationValue));
+                                }}
+                                style={secondaryButtonStyle}
+                              >
+                                Editar
+                              </button>
                               {canAdvance ? (
                                 <button type="button" onClick={() => handleAdvanceTask(task.id)} style={advanceButtonStyle}>
                                   {task.status === "todo" ? "Mover a realizando >" : "Mover a finalizadas >"}
@@ -975,6 +971,43 @@ export function ScrumHomePage() {
             </div>
           </section>
         )
+      ) : null}
+
+      {editingTaskId ? (
+        <div style={modalOverlayStyle} onClick={() => setEditingTaskId(null)}>
+          <div style={modalCardStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={modalHeaderStyle}>
+              <strong style={{ fontSize: 18 }}>Editar plazo</strong>
+              <button type="button" onClick={() => setEditingTaskId(null)} style={modalCloseButtonStyle}>
+                Cerrar
+              </button>
+            </div>
+
+            <div style={taskDurationEditorStyle}>
+              <select
+                value={editingDurationUnit}
+                onChange={(event) => setEditingDurationUnit(event.target.value as TaskDurationUnit)}
+                style={compactInputStyle}
+              >
+                <option value="days">Dias</option>
+                <option value="weeks">Semanas</option>
+                <option value="months">Meses</option>
+              </select>
+              <input
+                type="number"
+                min="1"
+                max={editingDurationUnit === "days" ? "6" : editingDurationUnit === "weeks" ? "4" : undefined}
+                step="1"
+                value={editingDurationValue}
+                onChange={(event) => setEditingDurationValue(event.target.value)}
+                style={compactNumberInputStyle}
+              />
+              <button type="button" onClick={() => handleUpdateTaskDuration(editingTaskId)} style={primaryButtonStyle}>
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );
@@ -1250,6 +1283,44 @@ const compactNumberInputStyle: React.CSSProperties = {
   ...inputStyle,
   minHeight: 38,
   width: "100%"
+};
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(15, 23, 42, 0.45)",
+  display: "grid",
+  placeItems: "center",
+  padding: 20,
+  zIndex: 1000
+};
+
+const modalCardStyle: React.CSSProperties = {
+  width: "min(520px, 100%)",
+  background: "#ffffff",
+  borderRadius: 8,
+  border: "1px solid #d7dfeb",
+  padding: 18,
+  display: "grid",
+  gap: 16
+};
+
+const modalHeaderStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12
+};
+
+const modalCloseButtonStyle: React.CSSProperties = {
+  minHeight: 36,
+  padding: "0 12px",
+  borderRadius: 8,
+  border: "1px solid #cfd8e6",
+  background: "#ffffff",
+  color: "#162033",
+  fontWeight: 700,
+  cursor: "pointer"
 };
 
 function statusPillStyle(status: TaskStatus): React.CSSProperties {
