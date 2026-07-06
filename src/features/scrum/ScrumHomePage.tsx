@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { BuildMetaCard } from "../../shared/components/BuildMetaCard";
-import { API_BASE_URL } from "../../shared/config/api";
 
 type TaskStatus = "todo" | "in_progress" | "done";
 type TaskDifficulty = "green" | "yellow" | "red";
+type ViewMode = "board" | "history";
 
 type ScrumTask = {
   id: number;
@@ -12,6 +11,7 @@ type ScrumTask = {
   difficulty: TaskDifficulty;
   status: TaskStatus;
   startedAt: number | null;
+  completedAt: number | null;
 };
 
 const INITIAL_TASKS: ScrumTask[] = [
@@ -21,7 +21,8 @@ const INITIAL_TASKS: ScrumTask[] = [
     estimatedMinutes: 240,
     difficulty: "yellow",
     status: "todo",
-    startedAt: null
+    startedAt: null,
+    completedAt: null
   }
 ];
 
@@ -81,14 +82,16 @@ function moveTaskStatus(task: ScrumTask): ScrumTask {
     return {
       ...task,
       status: "in_progress",
-      startedAt: Date.now()
+      startedAt: Date.now(),
+      completedAt: null
     };
   }
 
   if (task.status === "in_progress") {
     return {
       ...task,
-      status: "done"
+      status: "done",
+      completedAt: Date.now()
     };
   }
 
@@ -101,8 +104,7 @@ export function ScrumHomePage() {
   const [estimatedHours, setEstimatedHours] = useState("4");
   const [difficulty, setDifficulty] = useState<TaskDifficulty>("green");
   const [now, setNow] = useState(() => Date.now());
-  const [loading, setLoading] = useState(false);
-  const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("board");
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -123,6 +125,36 @@ export function ScrumHomePage() {
     [tasks]
   );
 
+  const completedHistory = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        dateLabel: string;
+        tasks: ScrumTask[];
+      }
+    >();
+
+    tasks
+      .filter((task) => task.status === "done" && task.completedAt)
+      .sort((left, right) => Number(right.completedAt) - Number(left.completedAt))
+      .forEach((task) => {
+        const completedAt = task.completedAt || Date.now();
+        const dateKey = new Intl.DateTimeFormat("es-UY", {
+          timeZone: "America/Montevideo",
+          weekday: "long",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric"
+        }).format(new Date(completedAt));
+
+        const current = grouped.get(dateKey) || { dateLabel: dateKey, tasks: [] };
+        current.tasks.push(task);
+        grouped.set(dateKey, current);
+      });
+
+    return Array.from(grouped.values());
+  }, [tasks]);
+
   function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -138,7 +170,8 @@ export function ScrumHomePage() {
       estimatedMinutes: Math.round(parsedHours * 60),
       difficulty,
       status: "todo",
-      startedAt: null
+      startedAt: null,
+      completedAt: null
     };
 
     setTasks((currentTasks) => [nextTask, ...currentTasks]);
@@ -151,52 +184,16 @@ export function ScrumHomePage() {
     setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? moveTaskStatus(task) : task)));
   }
 
-  async function handleFetchSample() {
-    setLoading(true);
-    setConnectionMessage(null);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/scrum/sample`);
-      if (!response.ok) {
-        throw new Error("No se pudo consultar Scrum");
-      }
-
-      const payload = (await response.json()) as {
-        ok: boolean;
-        item: {
-          id: number;
-          sprint: string;
-          task: string;
-          status: string;
-          owner: string;
-          createdAt: string;
-        } | null;
-      };
-
-      if (!payload.item) {
-        setConnectionMessage("La conexion funciona, pero no devolvio registros.");
-        return;
-      }
-
-      setConnectionMessage(
-        `BDD conectada: ${payload.item.sprint} | ${payload.item.task} | ${payload.item.status} | ${payload.item.owner}`
-      );
-    } catch (error) {
-      setConnectionMessage(error instanceof Error ? error.message : "Fallo la consulta");
-    } finally {
-      setLoading(false);
-    }
+  function handleDeleteTask(taskId: number) {
+    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
   }
 
   return (
     <main style={pageStyle}>
       <section style={heroStyle}>
         <div style={{ display: "grid", gap: 10 }}>
-          <span style={eyebrowStyle}>SaaSPro</span>
           <h1 style={titleStyle}>Scrum</h1>
-          <p style={bodyStyle}>Tablero inicial con alta de tareas, semaforo de dificultad y cronometro activo cuando una tarea pasa a realizando.</p>
         </div>
-        <BuildMetaCard />
       </section>
 
       <section style={controlStripStyle}>
@@ -249,84 +246,154 @@ export function ScrumHomePage() {
             <button type="submit" style={primaryButtonStyle}>
               Crear tarea
             </button>
-            <button type="button" onClick={handleFetchSample} disabled={loading} style={secondaryButtonStyle}>
-              {loading ? "Consultando..." : "Probar BDD"}
-            </button>
           </div>
         </form>
-
-        {connectionMessage ? <p style={feedbackStyle}>{connectionMessage}</p> : null}
       </section>
 
-      <section style={boardStyle}>
-        {(["todo", "in_progress", "done"] as TaskStatus[]).map((statusKey) => (
-          <section key={statusKey} style={columnStyle}>
-            <header style={columnHeaderStyle}>
-              <div style={{ display: "grid", gap: 4 }}>
-                <strong style={{ fontSize: 17 }}>{STATUS_LABELS[statusKey]}</strong>
-                <span style={columnCaptionStyle}>
-                  {statusKey === "todo"
-                    ? "Pendientes para empezar"
-                    : statusKey === "in_progress"
-                      ? "Corriendo con tiempo descontando"
-                      : "Tareas cerradas"}
-                </span>
+      <section style={tabsWrapStyle}>
+        <button
+          type="button"
+          onClick={() => setViewMode("board")}
+          style={tabButtonStyle(viewMode === "board")}
+        >
+          Tablero
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("history")}
+          style={tabButtonStyle(viewMode === "history")}
+        >
+          Historial diario
+        </button>
+      </section>
+
+      {viewMode === "board" ? (
+        <section style={boardStyle}>
+          {(["todo", "in_progress", "done"] as TaskStatus[]).map((statusKey) => (
+            <section key={statusKey} style={columnStyle}>
+              <header style={columnHeaderStyle}>
+                <div style={{ display: "grid", gap: 4 }}>
+                  <strong style={{ fontSize: 17 }}>{STATUS_LABELS[statusKey]}</strong>
+                  <span style={columnCaptionStyle}>
+                    {statusKey === "todo"
+                      ? "Pendientes para empezar"
+                      : statusKey === "in_progress"
+                        ? "Corriendo con tiempo descontando"
+                        : "Tareas cerradas"}
+                  </span>
+                </div>
+                <span style={counterStyle}>{groupedTasks[statusKey].length}</span>
+              </header>
+
+              <div style={taskListStyle}>
+                {groupedTasks[statusKey].length === 0 ? <p style={emptyStateStyle}>Sin tareas en esta columna.</p> : null}
+
+                {groupedTasks[statusKey].map((task) => {
+                  const difficultyStyle = DIFFICULTY_STYLES[task.difficulty];
+                  const canAdvance = task.status !== "done";
+
+                  return (
+                    <article
+                      key={task.id}
+                      style={{
+                        ...taskCardStyle,
+                        borderLeft: `5px solid ${difficultyStyle.accent}`,
+                        background: difficultyStyle.background
+                      }}
+                    >
+                      <div style={taskHeaderStyle}>
+                        <strong style={taskTitleStyle}>{task.title}</strong>
+                        <span
+                          style={{
+                            ...difficultyBadgeStyle,
+                            background: difficultyStyle.accent,
+                            color: "#ffffff"
+                          }}
+                        >
+                          {DIFFICULTY_LABELS[task.difficulty]}
+                        </span>
+                      </div>
+
+                      <div style={taskMetaGridStyle}>
+                        <span style={metaChipStyle}>Estimado: {formatMinutes(task.estimatedMinutes)}</span>
+                        <span style={metaChipStyle}>Reloj: {formatRemainingTime(task, now)}</span>
+                      </div>
+
+                      <div style={taskFooterStyle}>
+                        <span style={statusPillStyle(task.status)}>
+                          {task.status === "todo" ? "Pendiente" : task.status === "in_progress" ? "En curso" : "Finalizada"}
+                        </span>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {canAdvance ? (
+                            <button type="button" onClick={() => handleAdvanceTask(task.id)} style={advanceButtonStyle}>
+                              {task.status === "todo" ? "Mover a realizando >" : "Mover a finalizadas >"}
+                            </button>
+                          ) : null}
+                          {task.status === "done" ? (
+                            <button type="button" onClick={() => handleDeleteTask(task.id)} style={deleteButtonStyle}>
+                              Borrar
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
-              <span style={counterStyle}>{groupedTasks[statusKey].length}</span>
-            </header>
-
-            <div style={taskListStyle}>
-              {groupedTasks[statusKey].length === 0 ? <p style={emptyStateStyle}>Sin tareas en esta columna.</p> : null}
-
-              {groupedTasks[statusKey].map((task) => {
-                const difficultyStyle = DIFFICULTY_STYLES[task.difficulty];
-                const canAdvance = task.status !== "done";
-
-                return (
-                  <article
-                    key={task.id}
-                    style={{
-                      ...taskCardStyle,
-                      borderLeft: `5px solid ${difficultyStyle.accent}`,
-                      background: difficultyStyle.background
-                    }}
-                  >
-                    <div style={taskHeaderStyle}>
-                      <strong style={taskTitleStyle}>{task.title}</strong>
-                      <span
-                        style={{
-                          ...difficultyBadgeStyle,
-                          background: difficultyStyle.accent,
-                          color: "#ffffff"
-                        }}
-                      >
-                        {DIFFICULTY_LABELS[task.difficulty]}
-                      </span>
-                    </div>
-
-                    <div style={taskMetaGridStyle}>
-                      <span style={metaChipStyle}>Estimado: {formatMinutes(task.estimatedMinutes)}</span>
-                      <span style={metaChipStyle}>Reloj: {formatRemainingTime(task, now)}</span>
-                    </div>
-
-                    <div style={taskFooterStyle}>
-                      <span style={statusPillStyle(task.status)}>
-                        {task.status === "todo" ? "Pendiente" : task.status === "in_progress" ? "En curso" : "Finalizada"}
-                      </span>
-
-                      {canAdvance ? (
-                        <button type="button" onClick={() => handleAdvanceTask(task.id)} style={advanceButtonStyle}>
-                          {task.status === "todo" ? "Mover a realizando >" : "Mover a finalizadas >"}
-                        </button>
-                      ) : null}
-                    </div>
-                  </article>
-                );
-              })}
+            </section>
+          ))}
+        </section>
+      ) : (
+        <section style={historyPanelStyle}>
+          <header style={historyHeaderStyle}>
+            <div style={{ display: "grid", gap: 4 }}>
+              <strong style={{ fontSize: 18 }}>Historial diario</strong>
+              <span style={columnCaptionStyle}>Aca ves por dia las tareas que ya pasaron a finalizadas.</span>
             </div>
-          </section>
-        ))}
-      </section>
+          </header>
+
+          <div style={historyListStyle}>
+            {completedHistory.length === 0 ? <p style={emptyStateStyle}>Todavia no hay tareas finalizadas para registrar.</p> : null}
+
+            {completedHistory.map((entry) => (
+              <article key={entry.dateLabel} style={historyCardStyle}>
+                <div style={historyDayHeaderStyle}>
+                  <strong style={{ fontSize: 16, textTransform: "capitalize" }}>{entry.dateLabel}</strong>
+                  <span style={counterStyle}>{entry.tasks.length}</span>
+                </div>
+
+                <div style={historyTaskListStyle}>
+                  {entry.tasks.map((task) => {
+                    const difficultyStyle = DIFFICULTY_STYLES[task.difficulty];
+
+                    return (
+                      <div key={task.id} style={historyTaskRowStyle}>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <strong style={{ fontSize: 14 }}>{task.title}</strong>
+                          <span style={metaChipStyle}>
+                            {formatMinutes(task.estimatedMinutes)} | {DIFFICULTY_LABELS[task.difficulty]}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            ...difficultyBadgeStyle,
+                            background: difficultyStyle.background,
+                            color: difficultyStyle.text,
+                            border: `1px solid ${difficultyStyle.accent}`
+                          }}
+                        >
+                          Hecha
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -350,24 +417,10 @@ const heroStyle: React.CSSProperties = {
   alignItems: "start"
 };
 
-const eyebrowStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  textTransform: "uppercase",
-  color: "#3056d3"
-};
-
 const titleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: "clamp(32px, 5vw, 44px)",
   lineHeight: 1.05
-};
-
-const bodyStyle: React.CSSProperties = {
-  margin: 0,
-  maxWidth: 700,
-  lineHeight: 1.6,
-  color: "#53627c"
 };
 
 const controlStripStyle: React.CSSProperties = {
@@ -413,7 +466,8 @@ const formActionsStyle: React.CSSProperties = {
   display: "flex",
   gap: 10,
   alignItems: "center",
-  flexWrap: "wrap"
+  flexWrap: "wrap",
+  alignSelf: "end"
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -427,27 +481,26 @@ const primaryButtonStyle: React.CSSProperties = {
   cursor: "pointer"
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
-  minHeight: 42,
-  padding: "0 16px",
-  border: "1px solid #cfd8e6",
-  borderRadius: 8,
-  background: "#f8fbff",
-  color: "#234051",
-  fontWeight: 700,
-  cursor: "pointer"
+const tabsWrapStyle: React.CSSProperties = {
+  width: "min(1240px, 100%)",
+  margin: "0 auto",
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap"
 };
 
-const feedbackStyle: React.CSSProperties = {
-  margin: 0,
-  padding: "12px 14px",
-  border: "1px solid #dbe4f3",
-  borderRadius: 8,
-  background: "#f7faff",
-  color: "#234051",
-  fontSize: 14,
-  lineHeight: 1.5
-};
+function tabButtonStyle(active: boolean): React.CSSProperties {
+  return {
+    minHeight: 40,
+    padding: "0 14px",
+    borderRadius: 999,
+    border: active ? "1px solid #1f4ed8" : "1px solid #d4dbe7",
+    background: active ? "#eaf0ff" : "#ffffff",
+    color: active ? "#1f4ed8" : "#43526a",
+    fontWeight: 700,
+    cursor: "pointer"
+  };
+}
 
 const boardStyle: React.CSSProperties = {
   width: "min(1240px, 100%)",
@@ -611,4 +664,68 @@ const advanceButtonStyle: React.CSSProperties = {
   color: "#ffffff",
   fontWeight: 700,
   cursor: "pointer"
+};
+
+const deleteButtonStyle: React.CSSProperties = {
+  minHeight: 36,
+  padding: "0 12px",
+  border: "1px solid #e3bcbc",
+  borderRadius: 8,
+  background: "#fff5f5",
+  color: "#9e2b2b",
+  fontWeight: 700,
+  cursor: "pointer"
+};
+
+const historyPanelStyle: React.CSSProperties = {
+  width: "min(1240px, 100%)",
+  margin: "0 auto",
+  background: "#ffffff",
+  border: "1px solid #d7dfeb",
+  borderRadius: 8,
+  padding: 18,
+  display: "grid",
+  gap: 16
+};
+
+const historyHeaderStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12
+};
+
+const historyListStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 14
+};
+
+const historyCardStyle: React.CSSProperties = {
+  border: "1px solid #e2e8f3",
+  borderRadius: 8,
+  padding: 16,
+  display: "grid",
+  gap: 12,
+  background: "#fbfcff"
+};
+
+const historyDayHeaderStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12
+};
+
+const historyTaskListStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10
+};
+
+const historyTaskRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "12px 0",
+  borderTop: "1px solid #e8edf5"
 };
