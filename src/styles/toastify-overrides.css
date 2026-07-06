@@ -1,0 +1,10 @@
+.Toastify__toast {
+  border-radius: 8px;
+  border: 1px solid #dce3f0;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+
+.Toastify__toast-body {
+  color: #162033;
+}
