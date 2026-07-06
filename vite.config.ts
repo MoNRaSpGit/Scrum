@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
   );
 
   return {
-    base: isGithubPagesBuild ? "/frontend-scrum/" : "/",
+    base: isGithubPagesBuild ? "/Scrum/" : "/",
     plugins: [
       react(),
       {
