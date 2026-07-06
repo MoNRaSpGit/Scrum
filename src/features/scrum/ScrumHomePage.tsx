@@ -243,6 +243,10 @@ export function ScrumHomePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("board");
   const [clients, setClients] = useState<ClientBilling[]>(INITIAL_CLIENTS);
   const [expandedClientId, setExpandedClientId] = useState<number | null>(INITIAL_CLIENTS[0]?.id ?? null);
+  const [clientName, setClientName] = useState("");
+  const [clientAmount, setClientAmount] = useState("");
+  const [clientFrequency, setClientFrequency] = useState<BillingFrequency>("monthly");
+  const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -337,6 +341,31 @@ export function ScrumHomePage() {
           : client
       )
     );
+  }
+
+  function handleCreateClient(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedName = clientName.trim();
+    const parsedAmount = Number(clientAmount);
+    if (!normalizedName || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || !clientNextPaymentAt) {
+      return;
+    }
+
+    const nextClient: ClientBilling = {
+      id: clients.length ? Math.max(...clients.map((client) => client.id)) + 1 : 1,
+      name: normalizedName,
+      amount: Math.round(parsedAmount),
+      frequency: clientFrequency,
+      nextPaymentAt: clientNextPaymentAt
+    };
+
+    setClients((currentClients) => [nextClient, ...currentClients]);
+    setExpandedClientId(nextClient.id);
+    setClientName("");
+    setClientAmount("");
+    setClientFrequency("monthly");
+    setClientNextPaymentAt("2026-08-05");
   }
 
   return (
@@ -563,6 +592,73 @@ export function ScrumHomePage() {
                 <span style={columnCaptionStyle}>Seguimiento de cobro segun frecuencia y proximidad del proximo pago.</span>
               </div>
             </header>
+
+            <section style={clientCreatePanelStyle}>
+              <form onSubmit={handleCreateClient} style={clientFormGridStyle}>
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle} htmlFor="client-name">
+                    Nombre
+                  </label>
+                  <input
+                    id="client-name"
+                    value={clientName}
+                    onChange={(event) => setClientName(event.target.value)}
+                    placeholder="Nombre del cliente"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle} htmlFor="client-amount">
+                    Monto
+                  </label>
+                  <input
+                    id="client-amount"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={clientAmount}
+                    onChange={(event) => setClientAmount(event.target.value)}
+                    placeholder="4500"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle} htmlFor="client-frequency">
+                    Frecuencia
+                  </label>
+                  <select
+                    id="client-frequency"
+                    value={clientFrequency}
+                    onChange={(event) => setClientFrequency(event.target.value as BillingFrequency)}
+                    style={inputStyle}
+                  >
+                    <option value="monthly">Mensual</option>
+                    <option value="semiannual">Cada 6 meses</option>
+                  </select>
+                </div>
+
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle} htmlFor="client-next-payment">
+                    Proximo pago
+                  </label>
+                  <input
+                    id="client-next-payment"
+                    type="date"
+                    value={clientNextPaymentAt}
+                    onChange={(event) => setClientNextPaymentAt(event.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={formActionsStyle}>
+                  <button type="submit" style={primaryButtonStyle}>
+                    Crear cliente
+                  </button>
+                </div>
+              </form>
+            </section>
 
             <div style={clientGridStyle}>
               {clients.map((client) => {
@@ -967,6 +1063,22 @@ const historyTaskRowStyle: React.CSSProperties = {
 const clientGridStyle: React.CSSProperties = {
   display: "grid",
   gap: 12
+};
+
+const clientCreatePanelStyle: React.CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #d7dfeb",
+  borderRadius: 8,
+  padding: 16,
+  display: "grid",
+  gap: 14
+};
+
+const clientFormGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(220px, 2fr) minmax(140px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto",
+  gap: 14,
+  alignItems: "end"
 };
 
 const clientCardStyle: React.CSSProperties = {
