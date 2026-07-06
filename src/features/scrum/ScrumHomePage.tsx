@@ -205,6 +205,7 @@ function moveTaskStatus(task: ScrumTask): ScrumTask {
 
 export function ScrumHomePage() {
   const [tasks, setTasks] = useState<ScrumTask[]>(INITIAL_TASKS);
+  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState<TaskDifficulty>("green");
@@ -519,7 +520,7 @@ export function ScrumHomePage() {
                     {statusKey === "todo"
                       ? "Pendientes para empezar"
                       : statusKey === "in_progress"
-                        ? "Corriendo con tiempo descontando"
+                        ? "Tareas en curso"
                         : "Tareas cerradas"}
                   </span>
                 </div>
@@ -532,6 +533,7 @@ export function ScrumHomePage() {
                 {groupedTasks[statusKey].map((task) => {
                   const difficultyStyle = DIFFICULTY_STYLES[task.difficulty];
                   const canAdvance = task.status !== "done";
+                  const expanded = expandedTaskId === task.id;
 
                   return (
                     <article
@@ -542,40 +544,51 @@ export function ScrumHomePage() {
                         background: difficultyStyle.background
                       }}
                     >
-                      <div style={taskHeaderStyle}>
-                        <div style={{ display: "grid", gap: 6 }}>
-                          <strong style={taskTitleStyle}>{task.title}</strong>
-                          {task.description ? <span style={taskDescriptionStyle}>{task.description}</span> : null}
-                        </div>
-                        <span
-                          style={{
-                            ...difficultyBadgeStyle,
-                            background: difficultyStyle.accent,
-                            color: "#ffffff"
-                          }}
-                        >
-                          {DIFFICULTY_LABELS[task.difficulty]}
-                        </span>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedTaskId(expanded ? null : task.id)}
+                        style={taskRowButtonStyle}
+                      >
+                        <strong style={taskTitleStyle}>{task.title}</strong>
+                      </button>
 
-                      <div style={taskFooterStyle}>
-                        <span style={statusPillStyle(task.status)}>
-                          {task.status === "todo" ? "Pendiente" : task.status === "in_progress" ? "En curso" : "Finalizada"}
-                        </span>
+                      {expanded ? (
+                        <div style={taskDetailsStyle}>
+                          <div style={taskHeaderStyle}>
+                            <div style={{ display: "grid", gap: 6 }}>
+                              {task.description ? <span style={taskDescriptionStyle}>{task.description}</span> : null}
+                            </div>
+                            <span
+                              style={{
+                                ...difficultyBadgeStyle,
+                                background: difficultyStyle.accent,
+                                color: "#ffffff"
+                              }}
+                            >
+                              {DIFFICULTY_LABELS[task.difficulty]}
+                            </span>
+                          </div>
 
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {canAdvance ? (
-                            <button type="button" onClick={() => handleAdvanceTask(task.id)} style={advanceButtonStyle}>
-                              {task.status === "todo" ? "Mover a realizando >" : "Mover a finalizadas >"}
-                            </button>
-                          ) : null}
-                          {task.status === "done" ? (
-                            <button type="button" onClick={() => handleDeleteTask(task.id)} style={deleteButtonStyle}>
-                              Borrar
-                            </button>
-                          ) : null}
+                          <div style={taskFooterStyle}>
+                            <span style={statusPillStyle(task.status)}>
+                              {task.status === "todo" ? "Pendiente" : task.status === "in_progress" ? "En curso" : "Finalizada"}
+                            </span>
+
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              {canAdvance ? (
+                                <button type="button" onClick={() => handleAdvanceTask(task.id)} style={advanceButtonStyle}>
+                                  {task.status === "todo" ? "Mover a realizando >" : "Mover a finalizadas >"}
+                                </button>
+                              ) : null}
+                              {task.status === "done" ? (
+                                <button type="button" onClick={() => handleDeleteTask(task.id)} style={deleteButtonStyle}>
+                                  Borrar
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ) : null}
                     </article>
                   );
                 })}
@@ -975,6 +988,16 @@ const taskHeaderStyle: React.CSSProperties = {
   justifyContent: "space-between"
 };
 
+const taskRowButtonStyle: React.CSSProperties = {
+  display: "flex",
+  width: "100%",
+  background: "transparent",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+  textAlign: "left"
+};
+
 const taskTitleStyle: React.CSSProperties = {
   fontSize: 15,
   lineHeight: 1.45
@@ -1009,6 +1032,13 @@ const taskFooterStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   flexWrap: "wrap"
+};
+
+const taskDetailsStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 12,
+  paddingTop: 10,
+  borderTop: "1px solid rgba(22, 32, 51, 0.08)"
 };
 
 function statusPillStyle(status: TaskStatus): React.CSSProperties {
