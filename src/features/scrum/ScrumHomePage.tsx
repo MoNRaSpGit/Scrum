@@ -3,6 +3,7 @@ import { API_BASE_URL } from "../../shared/config/api";
 
 type TaskStatus = "todo" | "in_progress" | "done";
 type TaskDifficulty = "green" | "yellow" | "red" | "blue";
+type TaskDurationUnit = "days" | "weeks" | "months";
 type ViewMode = "board" | "history" | "clients";
 type BillingFrequency = "monthly" | "semiannual";
 type ClientAlertState = "white" | "green" | "yellow" | "red";
@@ -12,6 +13,8 @@ type ScrumTask = {
   title: string;
   description?: string | null;
   estimatedMinutes: number;
+  durationUnit: TaskDurationUnit;
+  durationValue: number;
   difficulty: TaskDifficulty;
   dailyTaskKey?: string | null;
   status: TaskStatus;
@@ -182,6 +185,18 @@ function getMontevideoDateKey(dateValue: number) {
   }).format(new Date(dateValue));
 }
 
+function formatTaskDuration(durationUnit: TaskDurationUnit, durationValue: number) {
+  if (durationUnit === "days") {
+    return durationValue === 1 ? "1 dia" : `${durationValue} dias`;
+  }
+
+  if (durationUnit === "weeks") {
+    return durationValue === 1 ? "1 semana" : `${durationValue} semanas`;
+  }
+
+  return durationValue === 1 ? "1 mes" : `${durationValue} meses`;
+}
+
 function moveTaskStatus(task: ScrumTask): ScrumTask {
   if (task.status === "todo") {
     return {
@@ -208,6 +223,8 @@ export function ScrumHomePage() {
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [durationUnit, setDurationUnit] = useState<TaskDurationUnit>("days");
+  const [durationValue, setDurationValue] = useState("1");
   const [difficulty, setDifficulty] = useState<TaskDifficulty>("green");
   const [now, setNow] = useState(() => Date.now());
   const [viewMode, setViewMode] = useState<ViewMode>("board");
@@ -219,6 +236,9 @@ export function ScrumHomePage() {
   const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [durationDrafts, setDurationDrafts] = useState<Record<number, { durationUnit: TaskDurationUnit; durationValue: string }>>(
+    {}
+  );
   const currentDayKey = getMontevideoDateKey(now);
 
   useEffect(() => {
@@ -293,7 +313,13 @@ export function ScrumHomePage() {
     event.preventDefault();
 
     const normalizedTitle = title.trim();
-    if (!normalizedTitle) {
+    const parsedDurationValue = Number(durationValue);
+    if (!normalizedTitle || !Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
+      return;
+    }
+
+    if (durationUnit === "days" && parsedDurationValue > 6) {
+      setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
       return;
     }
 
@@ -303,6 +329,8 @@ export function ScrumHomePage() {
         body: JSON.stringify({
           title: normalizedTitle,
           description: description.trim() || undefined,
+          durationUnit,
+          durationValue: Math.round(parsedDurationValue),
           difficulty
         })
       });
@@ -310,6 +338,8 @@ export function ScrumHomePage() {
       setTasks((currentTasks) => [response.item, ...currentTasks]);
       setTitle("");
       setDescription("");
+      setDurationUnit("days");
+      setDurationValue("1");
       setDifficulty("green");
       setFeedbackMessage(null);
     } catch {
@@ -351,6 +381,46 @@ export function ScrumHomePage() {
       setFeedbackMessage(null);
     } catch {
       setFeedbackMessage("No se pudo borrar la tarea.");
+    }
+  }
+
+  async function handleUpdateTaskDuration(taskId: number) {
+    const draft = durationDrafts[taskId];
+    if (!draft) {
+      return;
+    }
+
+    const parsedDurationValue = Number(draft.durationValue);
+    if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
+      setFeedbackMessage("El plazo tiene que ser mayor a 0.");
+      return;
+    }
+
+    if (draft.durationUnit === "days" && parsedDurationValue > 6) {
+      setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
+      return;
+    }
+
+    try {
+      const response = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/duration`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          durationUnit: draft.durationUnit,
+          durationValue: Math.round(parsedDurationValue)
+        })
+      });
+
+      setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
+      setDurationDrafts((currentDrafts) => ({
+        ...currentDrafts,
+        [taskId]: {
+          durationUnit: response.item.durationUnit,
+          durationValue: String(response.item.durationValue)
+        }
+      }));
+      setFeedbackMessage(null);
+    } catch {
+      setFeedbackMessage("No se pudo actualizar el plazo.");
     }
   }
 
@@ -500,6 +570,39 @@ export function ScrumHomePage() {
             </select>
           </div>
 
+          <div style={fieldGroupStyle}>
+            <label style={labelStyle} htmlFor="task-duration-unit">
+              Plazo
+            </label>
+            <div style={durationInlineStyle}>
+              <select
+                id="task-duration-unit"
+                value={durationUnit}
+                onChange={(event) => {
+                  const nextUnit = event.target.value as TaskDurationUnit;
+                  setDurationUnit(nextUnit);
+                  if (nextUnit !== "days" && Number(durationValue) <= 0) {
+                    setDurationValue("1");
+                  }
+                }}
+                style={inputStyle}
+              >
+                <option value="days">Dias</option>
+                <option value="weeks">Semanas</option>
+                <option value="months">Meses</option>
+              </select>
+              <input
+                type="number"
+                min="1"
+                max={durationUnit === "days" ? "6" : undefined}
+                step="1"
+                value={durationValue}
+                onChange={(event) => setDurationValue(event.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
           <div style={formActionsStyle}>
             <button type="submit" style={primaryButtonStyle}>
               Crear tarea
@@ -534,6 +637,10 @@ export function ScrumHomePage() {
                   const difficultyStyle = DIFFICULTY_STYLES[task.difficulty];
                   const canAdvance = task.status !== "done";
                   const expanded = expandedTaskId === task.id;
+                  const durationDraft = durationDrafts[task.id] || {
+                    durationUnit: task.durationUnit,
+                    durationValue: String(task.durationValue)
+                  };
 
                   return (
                     <article
@@ -546,7 +653,16 @@ export function ScrumHomePage() {
                     >
                       <button
                         type="button"
-                        onClick={() => setExpandedTaskId(expanded ? null : task.id)}
+                        onClick={() => {
+                          setExpandedTaskId(expanded ? null : task.id);
+                          setDurationDrafts((currentDrafts) => ({
+                            ...currentDrafts,
+                            [task.id]: currentDrafts[task.id] || {
+                              durationUnit: task.durationUnit,
+                              durationValue: String(task.durationValue)
+                            }
+                          }));
+                        }}
                         style={taskRowButtonStyle}
                       >
                         <strong style={taskTitleStyle}>{task.title}</strong>
@@ -557,6 +673,9 @@ export function ScrumHomePage() {
                           <div style={taskHeaderStyle}>
                             <div style={{ display: "grid", gap: 6 }}>
                               {task.description ? <span style={taskDescriptionStyle}>{task.description}</span> : null}
+                              <span style={metaChipStyle}>
+                                Plazo: {formatTaskDuration(task.durationUnit, task.durationValue)}
+                              </span>
                             </div>
                             <span
                               style={{
@@ -567,6 +686,46 @@ export function ScrumHomePage() {
                             >
                               {DIFFICULTY_LABELS[task.difficulty]}
                             </span>
+                          </div>
+
+                          <div style={taskDurationEditorStyle}>
+                            <select
+                              value={durationDraft.durationUnit}
+                              onChange={(event) =>
+                                setDurationDrafts((currentDrafts) => ({
+                                  ...currentDrafts,
+                                  [task.id]: {
+                                    ...durationDraft,
+                                    durationUnit: event.target.value as TaskDurationUnit
+                                  }
+                                }))
+                              }
+                              style={compactInputStyle}
+                            >
+                              <option value="days">Dias</option>
+                              <option value="weeks">Semanas</option>
+                              <option value="months">Meses</option>
+                            </select>
+                            <input
+                              type="number"
+                              min="1"
+                              max={durationDraft.durationUnit === "days" ? "6" : undefined}
+                              step="1"
+                              value={durationDraft.durationValue}
+                              onChange={(event) =>
+                                setDurationDrafts((currentDrafts) => ({
+                                  ...currentDrafts,
+                                  [task.id]: {
+                                    ...durationDraft,
+                                    durationValue: event.target.value
+                                  }
+                                }))
+                              }
+                              style={compactNumberInputStyle}
+                            />
+                            <button type="button" onClick={() => handleUpdateTaskDuration(task.id)} style={secondaryButtonStyle}>
+                              Guardar plazo
+                            </button>
                           </div>
 
                           <div style={taskFooterStyle}>
@@ -848,7 +1007,7 @@ const controlStripStyle: React.CSSProperties = {
 
 const formGridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "minmax(220px, 2fr) minmax(220px, 2fr) minmax(180px, 1fr) auto",
+  gridTemplateColumns: "minmax(220px, 1.6fr) minmax(220px, 1.8fr) minmax(180px, 1fr) minmax(240px, 1.2fr) auto",
   gap: 14,
   alignItems: "end"
 };
@@ -1039,6 +1198,31 @@ const taskDetailsStyle: React.CSSProperties = {
   gap: 12,
   paddingTop: 10,
   borderTop: "1px solid rgba(22, 32, 51, 0.08)"
+};
+
+const durationInlineStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(120px, 1fr) minmax(90px, 100px)",
+  gap: 10,
+  alignItems: "center"
+};
+
+const taskDurationEditorStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(120px, 160px) minmax(80px, 100px) auto",
+  gap: 10,
+  alignItems: "center"
+};
+
+const compactInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  minHeight: 38
+};
+
+const compactNumberInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  minHeight: 38,
+  width: "100%"
 };
 
 function statusPillStyle(status: TaskStatus): React.CSSProperties {
