@@ -319,8 +319,9 @@ function formatTrackedTimeSummary(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);
   const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
 
-  return `${hours} h ${String(minutes).padStart(2, "0")} min`;
+  return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function mergeBoardTimerHistory(history: BoardTimerHistoryEntry[], entry: BoardTimerHistoryEntry) {
@@ -471,12 +472,12 @@ export function ScrumHomePage() {
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setNow(Date.now());
-    }, 1000);
+    }, boardTimerState.timerStartedAt ? 33 : 1000);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [boardTimerState.timerStartedAt]);
 
   useEffect(() => {
     async function loadWorkspace() {
@@ -798,7 +799,7 @@ export function ScrumHomePage() {
               </button>
             </div>
             <div style={boardTimerPanelStyle}>
-              <span style={boardTimerCaptionStyle}>{boardTimerState.timerStartedAt ? "En vivo" : "Resultado de hoy"}</span>
+              <span style={boardTimerCaptionStyle}>{boardTimerState.timerStartedAt ? "En vivo" : "Tiempo acumulado hoy"}</span>
               <span style={boardTimerValueStyle}>
                 {boardTimerState.timerStartedAt
                   ? formatTrackedTimeWithMilliseconds(boardElapsedMilliseconds)
