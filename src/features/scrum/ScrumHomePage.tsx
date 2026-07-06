@@ -198,8 +198,8 @@ function formatTaskDuration(durationUnit: TaskDurationUnit, durationValue: numbe
   return durationValue === 1 ? "1 mes" : `${durationValue} meses`;
 }
 
-function getTaskDueAt(task: ScrumTask) {
-  const dueAt = new Date(task.createdAt);
+function getTaskDueAt(task: ScrumTask, startAt: number) {
+  const dueAt = new Date(startAt);
 
   if (task.durationUnit === "days") {
     dueAt.setDate(dueAt.getDate() + task.durationValue);
@@ -216,31 +216,52 @@ function getTaskDueAt(task: ScrumTask) {
 }
 
 function formatTaskRemaining(task: ScrumTask, now: number) {
-  const diffMs = getTaskDueAt(task) - now;
+  if (task.status === "todo" || !task.startedAt) {
+    return `Plazo: ${formatTaskDuration(task.durationUnit, task.durationValue)}`;
+  }
+
+  if (task.status === "done") {
+    return "Tarea finalizada";
+  }
+
+  const diffMs = getTaskDueAt(task, task.startedAt) - now;
   if (diffMs <= 0) {
     return "Plazo vencido";
   }
 
-  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const totalHours = Math.floor(totalMinutes / 60);
+  const totalDays = Math.floor(totalHours / 24);
+  const totalWeeks = Math.floor(totalDays / 7);
+  const minutes = totalMinutes % 60;
+  const hours = totalHours % 24;
+  const days = totalDays % 7;
 
   if (totalHours < 24) {
-    return totalHours === 1 ? "Queda 1 hora" : `Quedan ${totalHours} horas`;
+    const hourLabel = totalHours === 1 ? "1 hora" : `${totalHours} horas`;
+    const minuteLabel = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+    return `Quedan ${hourLabel}:${minuteLabel}`;
   }
 
-  if (totalDays < 7) {
-    return totalDays === 1 ? "Queda 1 dia" : `Quedan ${totalDays} dias`;
+  if (totalDays < 7 && task.durationUnit === "days") {
+    const dayLabel = totalDays === 1 ? "1 dia" : `${totalDays} dias`;
+    const hourLabel = hours === 1 ? "1 hora" : `${hours} horas`;
+    const minuteLabel = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+    return `Quedan ${dayLabel}:${hourLabel}:${minuteLabel}`;
   }
 
-  const weeks = Math.floor(totalDays / 7);
-  const days = totalDays % 7;
-  if (days === 0) {
-    return weeks === 1 ? "Queda 1 semana" : `Quedan ${weeks} semanas`;
+  if (totalWeeks > 0) {
+    const weekLabel = totalWeeks === 1 ? "1 semana" : `${totalWeeks} semanas`;
+    const dayLabel = days === 1 ? "1 dia" : `${days} dias`;
+    const hourLabel = hours === 1 ? "1 hora" : `${hours} horas`;
+    const minuteLabel = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+    return `Quedan ${weekLabel} ${dayLabel}:${hourLabel}:${minuteLabel}`;
   }
 
-  const weekLabel = weeks === 1 ? "1 semana" : `${weeks} semanas`;
-  const dayLabel = days === 1 ? "1 dia" : `${days} dias`;
-  return `Quedan ${weekLabel} y ${dayLabel}`;
+  const dayLabel = totalDays === 1 ? "1 dia" : `${totalDays} dias`;
+  const hourLabel = hours === 1 ? "1 hora" : `${hours} horas`;
+  const minuteLabel = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+  return `Quedan ${dayLabel}:${hourLabel}:${minuteLabel}`;
 }
 
 function getTaskPriority(task: ScrumTask) {
