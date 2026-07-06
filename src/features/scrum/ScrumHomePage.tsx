@@ -4,7 +4,7 @@ type TaskStatus = "todo" | "in_progress" | "done";
 type TaskDifficulty = "green" | "yellow" | "red";
 type ViewMode = "board" | "history" | "clients";
 type BillingFrequency = "monthly" | "semiannual";
-type ClientAlertState = "green" | "yellow" | "red" | "purple";
+type ClientAlertState = "white" | "green" | "yellow" | "red";
 
 type ScrumTask = {
   id: number;
@@ -42,21 +42,21 @@ const INITIAL_CLIENTS: ClientBilling[] = [
     name: "Juan Perez",
     amount: 18000,
     frequency: "semiannual",
-    nextPaymentAt: "2026-07-26"
+    nextPaymentAt: "2026-08-20"
   },
   {
     id: 2,
     name: "Farmacia Centro",
     amount: 4200,
     frequency: "monthly",
-    nextPaymentAt: "2026-07-18"
+    nextPaymentAt: "2026-08-01"
   },
   {
     id: 3,
     name: "La Milagrosa",
     amount: 9500,
     frequency: "monthly",
-    nextPaymentAt: "2026-07-06"
+    nextPaymentAt: "2026-07-10"
   },
   {
     id: 4,
@@ -98,28 +98,28 @@ const DIFFICULTY_STYLES: Record<TaskDifficulty, { accent: string; background: st
 };
 
 const CLIENT_ALERT_STYLES: Record<ClientAlertState, { background: string; color: string; border: string; label: string }> = {
+  white: {
+    background: "#ffffff",
+    color: "#5f6b80",
+    border: "#d7dfeb",
+    label: "Normal"
+  },
   green: {
     background: "#eefaf1",
     color: "#1f6f31",
     border: "#8ed3a0",
-    label: "A tiempo"
+    label: "En mes"
   },
   yellow: {
     background: "#fff8e6",
     color: "#8f6800",
     border: "#f0cf71",
-    label: "Por vencer"
+    label: "En semana"
   },
   red: {
     background: "#fff0f0",
     color: "#9e2b2b",
     border: "#efadad",
-    label: "Vence hoy"
-  },
-  purple: {
-    background: "#f4efff",
-    color: "#6d3db8",
-    border: "#c4a7f0",
     label: "Vencido"
   }
 };
@@ -165,18 +165,18 @@ function getClientAlertState(nextPaymentAt: string, now: number): ClientAlertSta
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) {
-    return "purple";
-  }
-
-  if (diffDays === 0) {
     return "red";
   }
 
-  if (diffDays <= 14) {
+  if (diffDays <= 7) {
     return "yellow";
   }
 
-  return "green";
+  if (diffDays <= 30) {
+    return "green";
+  }
+
+  return "white";
 }
 
 function getClientRelativeLabel(nextPaymentAt: string, now: number) {
@@ -190,11 +190,7 @@ function getClientRelativeLabel(nextPaymentAt: string, now: number) {
     return overdueDays === 1 ? "Vencio hace 1 dia" : `Vencio hace ${overdueDays} dias`;
   }
 
-  if (diffDays === 0) {
-    return "Vence hoy";
-  }
-
-  if (diffDays < 30) {
+  if (diffDays <= 30) {
     return diffDays === 1 ? "Falta 1 dia" : `Faltan ${diffDays} dias`;
   }
 
@@ -231,6 +227,7 @@ export function ScrumHomePage() {
   const [now, setNow] = useState(() => Date.now());
   const [viewMode, setViewMode] = useState<ViewMode>("board");
   const [clients] = useState<ClientBilling[]>(INITIAL_CLIENTS);
+  const [expandedClientId, setExpandedClientId] = useState<number | null>(INITIAL_CLIENTS[0]?.id ?? null);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -543,6 +540,7 @@ export function ScrumHomePage() {
               {clients.map((client) => {
                 const alertState = getClientAlertState(client.nextPaymentAt, now);
                 const alertStyle = CLIENT_ALERT_STYLES[alertState];
+                const expanded = expandedClientId === client.id;
 
                 return (
                   <article
@@ -553,31 +551,39 @@ export function ScrumHomePage() {
                       borderColor: alertStyle.border
                     }}
                   >
-                    <div style={clientHeaderStyle}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedClientId(expanded ? null : client.id)}
+                      style={clientRowButtonStyle}
+                    >
                       <strong style={{ fontSize: 16 }}>{client.name}</strong>
                       <span
                         style={{
-                          ...difficultyBadgeStyle,
-                          background: "#ffffff",
+                          ...clientStatusBadgeStyle,
+                          background: alertStyle.background,
                           color: alertStyle.color,
                           border: `1px solid ${alertStyle.border}`
                         }}
                       >
                         {alertStyle.label}
                       </span>
-                    </div>
+                    </button>
 
-                    <div style={clientMetaGridStyle}>
-                      <span style={clientPrimaryValueStyle}>{formatCurrency(client.amount)}</span>
-                      <span style={metaChipStyle}>{BILLING_FREQUENCY_LABELS[client.frequency]}</span>
-                    </div>
+                    {expanded ? (
+                      <div style={clientDetailsStyle}>
+                        <div style={clientMetaGridStyle}>
+                          <span style={clientPrimaryValueStyle}>{formatCurrency(client.amount)}</span>
+                          <span style={metaChipStyle}>{BILLING_FREQUENCY_LABELS[client.frequency]}</span>
+                        </div>
 
-                    <div style={clientFooterStyle}>
-                      <span style={metaChipStyle}>Proximo pago: {client.nextPaymentAt}</span>
-                      <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
-                        {getClientRelativeLabel(client.nextPaymentAt, now)}
-                      </span>
-                    </div>
+                        <div style={clientFooterStyle}>
+                          <span style={metaChipStyle}>Proximo pago: {client.nextPaymentAt}</span>
+                          <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
+                            {getClientRelativeLabel(client.nextPaymentAt, now)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}
@@ -926,23 +932,45 @@ const historyTaskRowStyle: React.CSSProperties = {
 
 const clientGridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 14
+  gap: 12
 };
 
 const clientCardStyle: React.CSSProperties = {
   border: "1px solid",
   borderRadius: 8,
-  padding: 16,
+  padding: 14,
   display: "grid",
-  gap: 14
+  gap: 12
 };
 
-const clientHeaderStyle: React.CSSProperties = {
+const clientRowButtonStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
-  alignItems: "start",
-  gap: 12
+  alignItems: "center",
+  gap: 12,
+  background: "transparent",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+  textAlign: "left"
+};
+
+const clientStatusBadgeStyle: React.CSSProperties = {
+  minHeight: 26,
+  padding: "0 10px",
+  borderRadius: 999,
+  display: "inline-grid",
+  placeItems: "center",
+  fontSize: 12,
+  fontWeight: 800,
+  whiteSpace: "nowrap"
+};
+
+const clientDetailsStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10,
+  paddingTop: 10,
+  borderTop: "1px solid #e2e8f3"
 };
 
 const clientMetaGridStyle: React.CSSProperties = {
