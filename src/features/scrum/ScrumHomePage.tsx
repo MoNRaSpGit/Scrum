@@ -158,6 +158,21 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(`${value}T00:00:00`));
+}
+
+function addBillingCycle(dateValue: string, frequency: BillingFrequency) {
+  const nextDate = new Date(`${dateValue}T00:00:00`);
+  nextDate.setMonth(nextDate.getMonth() + (frequency === "monthly" ? 1 : 6));
+  return nextDate.toISOString().slice(0, 10);
+}
+
 function getClientAlertState(nextPaymentAt: string, now: number): ClientAlertState {
   const today = new Date(now);
   const dueDate = new Date(`${nextPaymentAt}T00:00:00`);
@@ -226,7 +241,7 @@ export function ScrumHomePage() {
   const [difficulty, setDifficulty] = useState<TaskDifficulty>("green");
   const [now, setNow] = useState(() => Date.now());
   const [viewMode, setViewMode] = useState<ViewMode>("board");
-  const [clients] = useState<ClientBilling[]>(INITIAL_CLIENTS);
+  const [clients, setClients] = useState<ClientBilling[]>(INITIAL_CLIENTS);
   const [expandedClientId, setExpandedClientId] = useState<number | null>(INITIAL_CLIENTS[0]?.id ?? null);
 
   useEffect(() => {
@@ -309,6 +324,19 @@ export function ScrumHomePage() {
 
   function handleDeleteTask(taskId: number) {
     setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
+  }
+
+  function handleRegisterClientPayment(clientId: number) {
+    setClients((currentClients) =>
+      currentClients.map((client) =>
+        client.id === clientId
+          ? {
+              ...client,
+              nextPaymentAt: addBillingCycle(client.nextPaymentAt, client.frequency)
+            }
+          : client
+      )
+    );
   }
 
   return (
@@ -545,11 +573,7 @@ export function ScrumHomePage() {
                 return (
                   <article
                     key={client.id}
-                    style={{
-                      ...clientCardStyle,
-                      background: alertStyle.background,
-                      borderColor: alertStyle.border
-                    }}
+                    style={clientCardStyle}
                   >
                     <button
                       type="button"
@@ -577,10 +601,20 @@ export function ScrumHomePage() {
                         </div>
 
                         <div style={clientFooterStyle}>
-                          <span style={metaChipStyle}>Proximo pago: {client.nextPaymentAt}</span>
+                          <span style={metaChipStyle}>Proximo pago: {formatDate(client.nextPaymentAt)}</span>
                           <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
                             {getClientRelativeLabel(client.nextPaymentAt, now)}
                           </span>
+                        </div>
+
+                        <div style={clientActionsStyle}>
+                          <button
+                            type="button"
+                            onClick={() => handleRegisterClientPayment(client.id)}
+                            style={secondaryButtonStyle}
+                          >
+                            Registrar pago
+                          </button>
                         </div>
                       </div>
                     ) : null}
@@ -936,11 +970,12 @@ const clientGridStyle: React.CSSProperties = {
 };
 
 const clientCardStyle: React.CSSProperties = {
-  border: "1px solid",
+  border: "1px solid #d7dfeb",
   borderRadius: 8,
   padding: 14,
   display: "grid",
-  gap: 12
+  gap: 12,
+  background: "#ffffff"
 };
 
 const clientRowButtonStyle: React.CSSProperties = {
@@ -973,6 +1008,10 @@ const clientDetailsStyle: React.CSSProperties = {
   borderTop: "1px solid #e2e8f3"
 };
 
+const clientActionsStyle: React.CSSProperties = {
+  display: "flex"
+};
+
 const clientMetaGridStyle: React.CSSProperties = {
   display: "grid",
   gap: 6
@@ -987,4 +1026,16 @@ const clientPrimaryValueStyle: React.CSSProperties = {
 const clientFooterStyle: React.CSSProperties = {
   display: "grid",
   gap: 6
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  minHeight: 38,
+  padding: "0 14px",
+  borderRadius: 8,
+  border: "1px solid #cfd8e6",
+  background: "#ffffff",
+  color: "#162033",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer"
 };
