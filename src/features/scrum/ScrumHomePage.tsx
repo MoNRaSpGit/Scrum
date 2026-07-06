@@ -1,15 +1,13 @@
 import { BuildMetaCard } from "../../shared/components/BuildMetaCard";
 
-const backlogItems = [
-  { id: "SC-101", title: "Definir backlog inicial", status: "Listo para refinar" },
-  { id: "SC-102", title: "Mapear flujo de tablero", status: "En discovery" },
-  { id: "SC-103", title: "Preparar estructura de auth", status: "Pendiente" }
-];
-
-const sprintItems = [
-  { id: "SP-12", title: "Scaffold del frontend", owner: "Sistema" },
-  { id: "SP-13", title: "Build meta y update notice", owner: "Sistema" },
-  { id: "SP-14", title: "Preparar base para deploy", owner: "Sistema" }
+const scrumRows = [
+  {
+    id: 1,
+    sprint: "Sprint 1",
+    tarea: "Conexion inicial frontend-scrum",
+    estado: "En progreso",
+    responsable: "MoNRa"
+  }
 ];
 
 export function ScrumHomePage() {
@@ -24,48 +22,39 @@ export function ScrumHomePage() {
         <BuildMetaCard />
       </section>
 
-      <section style={boardStyle}>
-        <article style={columnStyle}>
-          <header style={columnHeaderStyle}>
-            <strong>Backlog</strong>
-            <span style={counterStyle}>{backlogItems.length}</span>
-          </header>
-          {backlogItems.map((item) => (
-            <div key={item.id} style={ticketStyle}>
-              <span style={ticketKeyStyle}>{item.id}</span>
-              <strong style={ticketTitleStyle}>{item.title}</strong>
-              <span style={ticketMetaStyle}>{item.status}</span>
-            </div>
-          ))}
-        </article>
-
-        <article style={columnStyle}>
-          <header style={columnHeaderStyle}>
-            <strong>Sprint actual</strong>
-            <span style={counterStyle}>{sprintItems.length}</span>
-          </header>
-          {sprintItems.map((item) => (
-            <div key={item.id} style={ticketStyle}>
-              <span style={ticketKeyStyle}>{item.id}</span>
-              <strong style={ticketTitleStyle}>{item.title}</strong>
-              <span style={ticketMetaStyle}>Responsable: {item.owner}</span>
-            </div>
-          ))}
-        </article>
-
-        <article style={columnStyle}>
-          <header style={columnHeaderStyle}>
-            <strong>Siguientes pasos</strong>
-          </header>
-          <div style={ticketStyle}>
-            <strong style={ticketTitleStyle}>Conectar repo y primer deploy</strong>
-            <span style={ticketMetaStyle}>Una vez creado el repo, ya queda lista para push, build y deploy.</span>
+      <section style={tableSectionStyle}>
+        <header style={tableHeaderStyle}>
+          <div style={{ display: "grid", gap: 4 }}>
+            <strong style={{ fontSize: 18 }}>Tabla Scrum</strong>
+            <span style={tableCaptionStyle}>Dato inicial de prueba para validar la home y el deploy.</span>
           </div>
-          <div style={ticketStyle}>
-            <strong style={ticketTitleStyle}>Definir módulos</strong>
-            <span style={ticketMetaStyle}>Tablero, backlog, sprints, reportes, equipo.</span>
-          </div>
-        </article>
+          <span style={counterStyle}>{scrumRows.length} registro</span>
+        </header>
+
+        <div style={tableWrapStyle}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>ID</th>
+                <th style={thStyle}>Sprint</th>
+                <th style={thStyle}>Tarea</th>
+                <th style={thStyle}>Estado</th>
+                <th style={thStyle}>Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scrumRows.map((row) => (
+                <tr key={row.id}>
+                  <td style={tdStyle}>{row.id}</td>
+                  <td style={tdStyle}>{row.sprint}</td>
+                  <td style={tdStyle}>{row.tarea}</td>
+                  <td style={tdStyle}>{row.estado}</td>
+                  <td style={tdStyle}>{row.responsable}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   );
@@ -110,30 +99,27 @@ const bodyStyle: React.CSSProperties = {
   color: "#53627c"
 };
 
-const boardStyle: React.CSSProperties = {
-  width: "min(1180px, 100%)",
-  margin: "0 auto",
-  display: "grid",
-  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-  gap: 16
-};
-
-const columnStyle: React.CSSProperties = {
+const tableSectionStyle: React.CSSProperties = {
   background: "#ffffff",
   border: "1px solid #d7dfeb",
   borderRadius: 8,
-  padding: 16,
+  width: "min(1180px, 100%)",
+  margin: "0 auto",
+  padding: 18,
   display: "grid",
-  gap: 12,
-  alignContent: "start",
-  minHeight: 320
+  gap: 16
 };
 
-const columnHeaderStyle: React.CSSProperties = {
+const tableHeaderStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   gap: 12
+};
+
+const tableCaptionStyle: React.CSSProperties = {
+  color: "#60708a",
+  fontSize: 14
 };
 
 const counterStyle: React.CSSProperties = {
@@ -149,28 +135,32 @@ const counterStyle: React.CSSProperties = {
   fontWeight: 800
 };
 
-const ticketStyle: React.CSSProperties = {
-  padding: 14,
+const tableWrapStyle: React.CSSProperties = {
+  overflowX: "auto",
   border: "1px solid #e5ebf5",
   borderRadius: 8,
-  display: "grid",
-  gap: 6,
   background: "#fbfcff"
 };
 
-const ticketKeyStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  color: "#62708a"
+const tableStyle: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  minWidth: 760
 };
 
-const ticketTitleStyle: React.CSSProperties = {
-  fontSize: 15,
-  lineHeight: 1.4
-};
-
-const ticketMetaStyle: React.CSSProperties = {
+const thStyle: React.CSSProperties = {
+  textAlign: "left",
+  padding: "14px 16px",
   fontSize: 13,
+  color: "#5e6c86",
+  borderBottom: "1px solid #e5ebf5",
+  background: "#f4f7fc"
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "14px 16px",
+  fontSize: 14,
   lineHeight: 1.5,
-  color: "#60708a"
+  color: "#1c2940",
+  borderBottom: "1px solid #e5ebf5"
 };
