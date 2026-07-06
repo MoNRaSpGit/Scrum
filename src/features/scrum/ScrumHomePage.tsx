@@ -197,6 +197,21 @@ function formatTaskDuration(durationUnit: TaskDurationUnit, durationValue: numbe
   return durationValue === 1 ? "1 mes" : `${durationValue} meses`;
 }
 
+function getTaskPriority(task: ScrumTask) {
+  switch (task.difficulty) {
+    case "blue":
+      return 0;
+    case "red":
+      return 1;
+    case "yellow":
+      return 2;
+    case "green":
+      return 3;
+    default:
+      return 9;
+  }
+}
+
 function moveTaskStatus(task: ScrumTask): ScrumTask {
   if (task.status === "todo") {
     return {
@@ -272,9 +287,11 @@ export function ScrumHomePage() {
 
   const groupedTasks = useMemo(
     () => ({
-      todo: tasks.filter((task) => task.status === "todo"),
-      in_progress: tasks.filter((task) => task.status === "in_progress"),
-      done: tasks.filter((task) => task.status === "done")
+      todo: tasks.filter((task) => task.status === "todo").sort((left, right) => getTaskPriority(left) - getTaskPriority(right)),
+      in_progress: tasks
+        .filter((task) => task.status === "in_progress")
+        .sort((left, right) => getTaskPriority(left) - getTaskPriority(right)),
+      done: tasks.filter((task) => task.status === "done").sort((left, right) => getTaskPriority(left) - getTaskPriority(right))
     }),
     [tasks]
   );
@@ -320,6 +337,11 @@ export function ScrumHomePage() {
 
     if (durationUnit === "days" && parsedDurationValue > 6) {
       setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
+      return;
+    }
+
+    if (durationUnit === "weeks" && parsedDurationValue > 4) {
+      setFeedbackMessage("Si usas semanas, la cantidad maxima es 4.");
       return;
     }
 
@@ -398,6 +420,11 @@ export function ScrumHomePage() {
 
     if (draft.durationUnit === "days" && parsedDurationValue > 6) {
       setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
+      return;
+    }
+
+    if (draft.durationUnit === "weeks" && parsedDurationValue > 4) {
+      setFeedbackMessage("Si usas semanas, la cantidad maxima es 4.");
       return;
     }
 
@@ -594,7 +621,7 @@ export function ScrumHomePage() {
               <input
                 type="number"
                 min="1"
-                max={durationUnit === "days" ? "6" : undefined}
+                max={durationUnit === "days" ? "6" : durationUnit === "weeks" ? "4" : undefined}
                 step="1"
                 value={durationValue}
                 onChange={(event) => setDurationValue(event.target.value)}
@@ -709,7 +736,7 @@ export function ScrumHomePage() {
                             <input
                               type="number"
                               min="1"
-                              max={durationDraft.durationUnit === "days" ? "6" : undefined}
+                              max={durationDraft.durationUnit === "days" ? "6" : durationDraft.durationUnit === "weeks" ? "4" : undefined}
                               step="1"
                               value={durationDraft.durationValue}
                               onChange={(event) =>
