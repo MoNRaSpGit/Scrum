@@ -264,6 +264,18 @@ function formatTaskRemaining(task: ScrumTask, now: number) {
   return `Quedan ${dayLabel}:${hourLabel}:${minuteLabel}`;
 }
 
+function formatTrackedTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  const paddedMinutes = String(minutes).padStart(2, "0");
+  const paddedSeconds = String(seconds).padStart(2, "0");
+
+  return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+}
+
 function getTaskPriority(task: ScrumTask) {
   switch (task.difficulty) {
     case "blue":
@@ -321,7 +333,11 @@ export function ScrumHomePage() {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
   const [editingDurationValue, setEditingDurationValue] = useState("1");
+  const [boardTrackedSeconds, setBoardTrackedSeconds] = useState(0);
+  const [boardTimerStartedAt, setBoardTimerStartedAt] = useState<number | null>(null);
   const currentDayKey = getMontevideoDateKey(now);
+  const boardElapsedSeconds =
+    boardTrackedSeconds + (boardTimerStartedAt ? Math.max(0, Math.floor((now - boardTimerStartedAt) / 1000)) : 0);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -567,11 +583,32 @@ export function ScrumHomePage() {
     }
   }
 
+  function handleBoardTimerToggle() {
+    if (boardTimerStartedAt) {
+      const totalWorkedSeconds = boardTrackedSeconds + Math.max(0, Math.floor((Date.now() - boardTimerStartedAt) / 1000));
+      setBoardTrackedSeconds(totalWorkedSeconds);
+      setBoardTimerStartedAt(null);
+      setFeedbackMessage(`Tiempo trabajado total: ${formatTrackedTime(totalWorkedSeconds)}`);
+      return;
+    }
+
+    setBoardTimerStartedAt(Date.now());
+    setFeedbackMessage(null);
+  }
+
   return (
     <main style={pageStyle}>
       <section style={heroStyle}>
         <div style={{ display: "grid", gap: 10 }}>
-          <h1 style={titleStyle}>Scrum</h1>
+          <div style={titleRowStyle}>
+            <h1 style={titleStyle}>Scrum</h1>
+            <div style={boardTimerWrapStyle}>
+              <span style={boardTimerValueStyle}>{formatTrackedTime(boardElapsedSeconds)}</span>
+              <button type="button" onClick={handleBoardTimerToggle} style={boardTimerButtonStyle(Boolean(boardTimerStartedAt))}>
+                {boardTimerStartedAt ? "Detener cronometro" : "Iniciar cronometro"}
+              </button>
+            </div>
+          </div>
           {feedbackMessage ? <p style={noticeStyle}>{feedbackMessage}</p> : null}
         </div>
         <div style={headerTabsAlignStyle}>
@@ -1059,6 +1096,37 @@ const titleStyle: React.CSSProperties = {
   lineHeight: 1.05
 };
 
+const titleRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  flexWrap: "wrap"
+};
+
+const boardTimerWrapStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  flexWrap: "wrap",
+  justifyContent: "flex-end"
+};
+
+const boardTimerValueStyle: React.CSSProperties = {
+  minWidth: 108,
+  minHeight: 42,
+  padding: "0 14px",
+  borderRadius: 8,
+  border: "1px solid #d7dfeb",
+  background: "#ffffff",
+  color: "#162033",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 18,
+  fontWeight: 800
+};
+
 const noticeStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 14,
@@ -1132,6 +1200,19 @@ const primaryButtonStyle: React.CSSProperties = {
   fontWeight: 700,
   cursor: "pointer"
 };
+
+function boardTimerButtonStyle(running: boolean): React.CSSProperties {
+  return {
+    minHeight: 42,
+    padding: "0 16px",
+    border: "none",
+    borderRadius: 8,
+    background: running ? "#d64545" : "#1f4ed8",
+    color: "#ffffff",
+    fontWeight: 700,
+    cursor: "pointer"
+  };
+}
 
 const tabsWrapStyle: React.CSSProperties = {
   display: "flex",
