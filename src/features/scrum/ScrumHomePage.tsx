@@ -304,6 +304,25 @@ function formatTrackedTime(totalSeconds: number) {
   return `${hours}:${paddedMinutes}:${paddedSeconds}`;
 }
 
+function formatTrackedTimeWithMilliseconds(totalMilliseconds: number) {
+  const safeMilliseconds = Math.max(0, Math.floor(totalMilliseconds));
+  const totalSeconds = Math.floor(safeMilliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = safeMilliseconds % 1000;
+
+  return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
+}
+
+function formatTrackedTimeSummary(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+
+  return `${hours} h ${String(minutes).padStart(2, "0")} min`;
+}
+
 function mergeBoardTimerHistory(history: BoardTimerHistoryEntry[], entry: BoardTimerHistoryEntry) {
   const nextHistory = [...history];
   const existingIndex = nextHistory.findIndex((currentEntry) => currentEntry.dayKey === entry.dayKey);
@@ -445,6 +464,9 @@ export function ScrumHomePage() {
   const boardElapsedSeconds =
     boardTimerState.trackedSeconds +
     (boardTimerState.timerStartedAt ? Math.max(0, Math.floor((now - boardTimerState.timerStartedAt) / 1000)) : 0);
+  const boardElapsedMilliseconds =
+    boardTimerState.trackedSeconds * 1000 +
+    (boardTimerState.timerStartedAt ? Math.max(0, now - boardTimerState.timerStartedAt) : 0);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -764,11 +786,9 @@ export function ScrumHomePage() {
         <div style={{ display: "grid", gap: 10 }}>
           <div style={titleRowStyle}>
             <h1 style={titleStyle}>Scrum</h1>
+          </div>
+          <div style={boardTimerBlockStyle}>
             <div style={boardTimerWrapStyle}>
-              <div style={boardTimerPanelStyle}>
-                <span style={boardTimerCaptionStyle}>Hoy</span>
-                <span style={boardTimerValueStyle}>{formatTrackedTime(boardElapsedSeconds)}</span>
-              </div>
               <button
                 type="button"
                 onClick={handleBoardTimerToggle}
@@ -776,6 +796,14 @@ export function ScrumHomePage() {
               >
                 {boardTimerState.timerStartedAt ? "Detener cronometro" : "Iniciar cronometro"}
               </button>
+            </div>
+            <div style={boardTimerPanelStyle}>
+              <span style={boardTimerCaptionStyle}>{boardTimerState.timerStartedAt ? "En vivo" : "Resultado de hoy"}</span>
+              <span style={boardTimerValueStyle}>
+                {boardTimerState.timerStartedAt
+                  ? formatTrackedTimeWithMilliseconds(boardElapsedMilliseconds)
+                  : formatTrackedTimeSummary(boardElapsedSeconds)}
+              </span>
             </div>
           </div>
           {feedbackMessage ? <p style={noticeStyle}>{feedbackMessage}</p> : null}
@@ -1293,9 +1321,15 @@ const titleStyle: React.CSSProperties = {
 const titleRowStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
+  justifyContent: "flex-start",
   gap: 16,
   flexWrap: "wrap"
+};
+
+const boardTimerBlockStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10,
+  justifyItems: "start"
 };
 
 const boardTimerWrapStyle: React.CSSProperties = {
@@ -1303,13 +1337,13 @@ const boardTimerWrapStyle: React.CSSProperties = {
   alignItems: "center",
   gap: 10,
   flexWrap: "wrap",
-  justifyContent: "flex-end"
+  justifyContent: "flex-start"
 };
 
 const boardTimerPanelStyle: React.CSSProperties = {
   display: "grid",
   gap: 4,
-  justifyItems: "end"
+  justifyItems: "start"
 };
 
 const boardTimerCaptionStyle: React.CSSProperties = {
@@ -1320,7 +1354,7 @@ const boardTimerCaptionStyle: React.CSSProperties = {
 };
 
 const boardTimerValueStyle: React.CSSProperties = {
-  minWidth: 108,
+  minWidth: 188,
   minHeight: 42,
   padding: "0 14px",
   borderRadius: 8,
@@ -1330,7 +1364,8 @@ const boardTimerValueStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: 18,
+  fontSize: 20,
+  fontVariantNumeric: "tabular-nums",
   fontWeight: 800
 };
 
