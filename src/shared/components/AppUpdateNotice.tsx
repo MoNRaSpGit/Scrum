@@ -47,6 +47,24 @@ export function AppUpdateNotice() {
     };
   }, []);
 
+  async function handleUpdate() {
+    try {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if ("caches" in window) {
+        const keys = await window.caches.keys();
+        await Promise.all(keys.map((key) => window.caches.delete(key)));
+      }
+    } catch {
+      // If cleanup fails, still force a reload so the app can try again.
+    } finally {
+      window.location.reload();
+    }
+  }
+
   if (!show) {
     return null;
   }
@@ -54,7 +72,7 @@ export function AppUpdateNotice() {
   return (
     <aside style={noticeStyle}>
       <strong>Hay una version nueva disponible.</strong>
-      <button type="button" onClick={() => window.location.reload()} style={buttonStyle}>
+      <button type="button" onClick={handleUpdate} style={buttonStyle}>
         Actualizar
       </button>
     </aside>
