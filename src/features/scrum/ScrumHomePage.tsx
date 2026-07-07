@@ -47,9 +47,9 @@ export function ScrumHomePage() {
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingDifficulty, setEditingDifficulty] = useState<TaskDifficulty>("green");
   const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
   const [editingDurationValue, setEditingDurationValue] = useState("1");
-  const [editingDifficulty, setEditingDifficulty] = useState<TaskDifficulty>("green");
   const [boardTimerState, setBoardTimerState] = useState(() => getInitialBoardTimerState(Date.now()));
 
   const currentDayKey = getMontevideoDateKey(now);
@@ -216,35 +216,56 @@ export function ScrumHomePage() {
   }
 
   async function handleUpdateTaskDuration(taskId: number) {
+    const currentTask = tasks.find((task) => task.id === taskId);
+    if (!currentTask) {
+      return;
+    }
+
     const parsedDurationValue = Number(editingDurationValue);
-    if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
-      toast.error("El plazo tiene que ser mayor a 0.");
-      return;
-    }
-    if (editingDurationUnit === "days" && parsedDurationValue > 6) {
-      toast.error("Si usas dias, la cantidad maxima es 6.");
-      return;
-    }
-    if (editingDurationUnit === "weeks" && parsedDurationValue > 4) {
-      toast.error("Si usas semanas, la cantidad maxima es 4.");
+    const durationChanged = editingDurationUnit !== currentTask.durationUnit || Math.round(parsedDurationValue) !== currentTask.durationValue;
+    const difficultyChanged = editingDifficulty !== currentTask.difficulty;
+
+    if (!durationChanged && !difficultyChanged) {
+      setEditingTaskId(null);
       return;
     }
 
     try {
-      const response = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/duration`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          durationUnit: editingDurationUnit,
-          durationValue: Math.round(parsedDurationValue),
-          difficulty: editingDifficulty
-        })
-      });
+      if (durationChanged) {
+        if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
+          toast.error("El plazo tiene que ser mayor a 0.");
+          return;
+        }
+        if (editingDurationUnit === "days" && parsedDurationValue > 6) {
+          toast.error("Si usas dias, la cantidad maxima es 6.");
+          return;
+        }
+        if (editingDurationUnit === "weeks" && parsedDurationValue > 4) {
+          toast.error("Si usas semanas, la cantidad maxima es 4.");
+          return;
+        }
+      }
+
+      const response = durationChanged
+        ? await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/duration`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              durationUnit: editingDurationUnit,
+              durationValue: Math.round(parsedDurationValue)
+            })
+          })
+        : await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/difficulty`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              difficulty: editingDifficulty
+            })
+          });
 
       setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
       setEditingTaskId(null);
-      toast.success("Plazo actualizado.");
+      toast.success(durationChanged ? "Plazo actualizado." : "Color actualizado.");
     } catch {
-      toast.error("No se pudo actualizar el plazo.");
+      toast.error(durationChanged ? "No se pudo actualizar el plazo." : "No se pudo actualizar el color.");
     }
   }
 
