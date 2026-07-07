@@ -40,7 +40,7 @@ type ScrumBoardViewProps = {
   expandedTaskId: number | null;
   groupedTasks: Record<TaskStatus, ScrumTask[]>;
   now: number;
-  onAdvanceTask: (taskId: number) => void;
+  onAdvanceTask: (taskId: number, direction: "forward" | "backward") => void;
   onCreateTask: (event: FormEvent<HTMLFormElement>) => void;
   onDeleteTask: (taskId: number) => void;
   onOpenEditTask: (task: ScrumTask) => void;
@@ -205,9 +205,14 @@ export function ScrumBoardView({
                             <button type="button" onClick={() => onOpenEditTask(task)} style={secondaryButtonStyle}>
                               Editar
                             </button>
+                            {task.status !== "todo" ? (
+                              <button type="button" onClick={() => onAdvanceTask(task.id, "backward")} style={advanceButtonStyle}>
+                                Volver
+                              </button>
+                            ) : null}
                             {task.status !== "done" ? (
-                              <button type="button" onClick={() => onAdvanceTask(task.id)} style={advanceButtonStyle}>
-                                {task.status === "todo" ? "Mover a realizando >" : "Mover a finalizadas >"}
+                              <button type="button" onClick={() => onAdvanceTask(task.id, "forward")} style={advanceButtonStyle}>
+                                {task.status === "todo" ? "Mover a realizar >" : "Mover a finalizadas >"}
                               </button>
                             ) : null}
                             {task.status === "done" ? (

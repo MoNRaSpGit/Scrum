@@ -180,13 +180,13 @@ export function ScrumHomePage() {
     }
   }
 
-  async function handleAdvanceTask(taskId: number) {
+  async function handleMoveTask(taskId: number, direction: "forward" | "backward") {
     const currentTask = tasks.find((task) => task.id === taskId);
     if (!currentTask) {
       return;
     }
 
-    const nextTask = moveTaskStatus(currentTask);
+    const nextTask = moveTaskStatus(currentTask, direction);
 
     try {
       const response = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/status`, {
@@ -199,7 +199,11 @@ export function ScrumHomePage() {
       });
 
       setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
-      toast.success(nextTask.status === "in_progress" ? "Tarea movida a realizando." : "Tarea movida a finalizadas.");
+      if (direction === "backward") {
+        toast.success(nextTask.status === "todo" ? "Tarea devuelta a pendientes." : "Tarea devuelta a realizando.");
+      } else {
+        toast.success(nextTask.status === "in_progress" ? "Tarea movida a realizando." : "Tarea movida a finalizadas.");
+      }
     } catch {
       toast.error("No se pudo actualizar la tarea.");
     }
@@ -364,12 +368,12 @@ export function ScrumHomePage() {
           durationUnit={durationUnit}
           durationValue={durationValue}
           expandedTaskId={expandedTaskId}
-          groupedTasks={groupedTasks}
-          now={now}
-          onAdvanceTask={handleAdvanceTask}
-          onCreateTask={handleCreateTask}
-          onDeleteTask={handleDeleteTask}
-          onOpenEditTask={handleOpenEditTask}
+        groupedTasks={groupedTasks}
+        now={now}
+        onAdvanceTask={handleMoveTask}
+        onCreateTask={handleCreateTask}
+        onDeleteTask={handleDeleteTask}
+        onOpenEditTask={handleOpenEditTask}
           setDescription={setDescription}
           setDifficulty={setDifficulty}
           setDurationUnit={setDurationUnit}

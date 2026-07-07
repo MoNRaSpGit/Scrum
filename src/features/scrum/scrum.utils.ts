@@ -250,7 +250,19 @@ export function getTaskPriority(task: ScrumTask) {
   }
 }
 
-export function moveTaskStatus(task: ScrumTask): ScrumTask {
+export function moveTaskStatus(task: ScrumTask, direction: "forward" | "backward" = "forward"): ScrumTask {
+  if (direction === "backward") {
+    if (task.status === "done") {
+      return { ...task, status: "in_progress", completedAt: null, startedAt: task.startedAt || Date.now() };
+    }
+
+    if (task.status === "in_progress") {
+      return { ...task, status: "todo", startedAt: null, completedAt: null };
+    }
+
+    return task;
+  }
+
   if (task.status === "todo") {
     return { ...task, status: "in_progress", startedAt: Date.now(), completedAt: null };
   }
