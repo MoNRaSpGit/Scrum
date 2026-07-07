@@ -1,4 +1,4 @@
-const CACHE_NAME = "scrum-pwa-v2";
+const CACHE_NAME = "scrum-pwa-v3";
 
 function getBasePath() {
   const scopeUrl = new URL(self.registration.scope);
@@ -40,6 +40,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   const basePath = getBasePath();
+  const requestUrl = new URL(event.request.url);
+
+  if (requestUrl.pathname.endsWith("/app-build.json") || requestUrl.pathname.endsWith("/index.html")) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
