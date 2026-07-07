@@ -1,6 +1,16 @@
 import type { Dispatch, SetStateAction } from "react";
 import { DIFFICULTY_LABELS, type TaskDifficulty, type TaskDurationUnit } from "../scrum.types";
-import { compactInputStyle, compactNumberInputStyle, modalCardStyle, modalCloseButtonStyle, modalHeaderStyle, modalOverlayStyle, primaryButtonStyle, taskDurationEditorStyle } from "../scrum.styles";
+import {
+  compactInputStyle,
+  compactNumberInputStyle,
+  deleteButtonStyle,
+  modalCardStyle,
+  modalCloseButtonStyle,
+  modalHeaderStyle,
+  modalOverlayStyle,
+  primaryButtonStyle,
+  taskDurationEditorStyle
+} from "../scrum.styles";
 
 type ScrumDurationModalProps = {
   editingDifficulty: TaskDifficulty;
@@ -8,6 +18,7 @@ type ScrumDurationModalProps = {
   editingDurationValue: string;
   editingTaskId: number | null;
   onClose: () => void;
+  onDelete: (taskId: number) => void;
   onSave: (taskId: number) => void;
   setEditingDifficulty: Dispatch<SetStateAction<TaskDifficulty>>;
   setEditingDurationUnit: Dispatch<SetStateAction<TaskDurationUnit>>;
@@ -20,6 +31,7 @@ export function ScrumDurationModal({
   editingDurationValue,
   editingTaskId,
   onClose,
+  onDelete,
   onSave,
   setEditingDifficulty,
   setEditingDurationUnit,
@@ -61,7 +73,21 @@ export function ScrumDurationModal({
             onChange={(event) => setEditingDurationValue(event.target.value)}
             style={compactNumberInputStyle}
           />
-          <button type="button" onClick={() => onSave(editingTaskId)} style={primaryButtonStyle}>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, justifyContent: "space-between", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("Eliminar esta tarea?")) {
+                onDelete(editingTaskId);
+              }
+            }}
+            style={deleteButtonStyle}
+          >
+            Eliminar tarea
+          </button>
+          <button type="button" onClick={() => onSave(editingTaskId)} style={{ ...primaryButtonStyle, minWidth: 120 }}>
             Guardar
           </button>
         </div>

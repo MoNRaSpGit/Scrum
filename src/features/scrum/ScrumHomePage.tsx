@@ -410,6 +410,7 @@ export function ScrumHomePage() {
         editingDifficulty={editingDifficulty}
         editingTaskId={editingTaskId}
         onClose={() => setEditingTaskId(null)}
+        onDelete={handleDeleteTask}
         onSave={handleUpdateTaskDuration}
         setEditingDurationUnit={setEditingDurationUnit}
         setEditingDurationValue={setEditingDurationValue}
