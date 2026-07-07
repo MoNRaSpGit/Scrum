@@ -1,23 +1,27 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { TaskDurationUnit } from "../scrum.types";
+import { DIFFICULTY_LABELS, type TaskDifficulty, type TaskDurationUnit } from "../scrum.types";
 import { compactInputStyle, compactNumberInputStyle, modalCardStyle, modalCloseButtonStyle, modalHeaderStyle, modalOverlayStyle, primaryButtonStyle, taskDurationEditorStyle } from "../scrum.styles";
 
 type ScrumDurationModalProps = {
+  editingDifficulty: TaskDifficulty;
   editingDurationUnit: TaskDurationUnit;
   editingDurationValue: string;
   editingTaskId: number | null;
   onClose: () => void;
   onSave: (taskId: number) => void;
+  setEditingDifficulty: Dispatch<SetStateAction<TaskDifficulty>>;
   setEditingDurationUnit: Dispatch<SetStateAction<TaskDurationUnit>>;
   setEditingDurationValue: Dispatch<SetStateAction<string>>;
 };
 
 export function ScrumDurationModal({
+  editingDifficulty,
   editingDurationUnit,
   editingDurationValue,
   editingTaskId,
   onClose,
   onSave,
+  setEditingDifficulty,
   setEditingDurationUnit,
   setEditingDurationValue
 }: ScrumDurationModalProps) {
@@ -36,6 +40,13 @@ export function ScrumDurationModal({
         </div>
 
         <div style={taskDurationEditorStyle}>
+          <select value={editingDifficulty} onChange={(event) => setEditingDifficulty(event.target.value as TaskDifficulty)} style={compactInputStyle}>
+            {Object.entries(DIFFICULTY_LABELS).map(([difficulty, label]) => (
+              <option key={difficulty} value={difficulty}>
+                {label}
+              </option>
+            ))}
+          </select>
           <select value={editingDurationUnit} onChange={(event) => setEditingDurationUnit(event.target.value as TaskDurationUnit)} style={compactInputStyle}>
             <option value="days">Dias</option>
             <option value="weeks">Semanas</option>

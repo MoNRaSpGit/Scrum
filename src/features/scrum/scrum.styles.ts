@@ -273,7 +273,7 @@ export const modalCloseButtonStyle: CSSProperties = {
   background: "#ffffff",
   cursor: "pointer"
 };
-export const taskDurationEditorStyle: CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "minmax(0, 1fr) 100px auto" };
+export const taskDurationEditorStyle: CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) 100px auto" };
 export const compactInputStyle: CSSProperties = { ...inputStyle, minHeight: 40 };
 export const compactNumberInputStyle: CSSProperties = { ...inputStyle, minHeight: 40 };
 

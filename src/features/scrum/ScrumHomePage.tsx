@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import { ScrumBoardView } from "./components/ScrumBoardView";
 import { ScrumClientsView } from "./components/ScrumClientsView";
 import { ScrumDurationModal } from "./components/ScrumDurationModal";
@@ -48,6 +49,7 @@ export function ScrumHomePage() {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
   const [editingDurationValue, setEditingDurationValue] = useState("1");
+  const [editingDifficulty, setEditingDifficulty] = useState<TaskDifficulty>("green");
   const [boardTimerState, setBoardTimerState] = useState(() => getInitialBoardTimerState(Date.now()));
 
   const currentDayKey = getMontevideoDateKey(now);
@@ -146,11 +148,11 @@ export function ScrumHomePage() {
       return;
     }
     if (durationUnit === "days" && parsedDurationValue > 6) {
-      setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
+      toast.error("Si usas dias, la cantidad maxima es 6.");
       return;
     }
     if (durationUnit === "weeks" && parsedDurationValue > 4) {
-      setFeedbackMessage("Si usas semanas, la cantidad maxima es 4.");
+      toast.error("Si usas semanas, la cantidad maxima es 4.");
       return;
     }
 
@@ -172,9 +174,9 @@ export function ScrumHomePage() {
       setDurationUnit("days");
       setDurationValue("1");
       setDifficulty("green");
-      setFeedbackMessage(null);
+      toast.success("Tarea creada.");
     } catch {
-      setFeedbackMessage("No se pudo crear la tarea.");
+      toast.error("No se pudo crear la tarea.");
     }
   }
 
@@ -197,9 +199,9 @@ export function ScrumHomePage() {
       });
 
       setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
-      setFeedbackMessage(null);
+      toast.success(nextTask.status === "in_progress" ? "Tarea movida a realizando." : "Tarea movida a finalizadas.");
     } catch {
-      setFeedbackMessage("No se pudo actualizar la tarea.");
+      toast.error("No se pudo actualizar la tarea.");
     }
   }
 
@@ -207,24 +209,24 @@ export function ScrumHomePage() {
     try {
       await requestJson<{ ok: boolean }>(`/scrum/tasks/${taskId}`, { method: "DELETE" });
       setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
-      setFeedbackMessage(null);
+      toast.success("Tarea eliminada.");
     } catch {
-      setFeedbackMessage("No se pudo borrar la tarea.");
+      toast.error("No se pudo borrar la tarea.");
     }
   }
 
   async function handleUpdateTaskDuration(taskId: number) {
     const parsedDurationValue = Number(editingDurationValue);
     if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
-      setFeedbackMessage("El plazo tiene que ser mayor a 0.");
+      toast.error("El plazo tiene que ser mayor a 0.");
       return;
     }
     if (editingDurationUnit === "days" && parsedDurationValue > 6) {
-      setFeedbackMessage("Si usas dias, la cantidad maxima es 6.");
+      toast.error("Si usas dias, la cantidad maxima es 6.");
       return;
     }
     if (editingDurationUnit === "weeks" && parsedDurationValue > 4) {
-      setFeedbackMessage("Si usas semanas, la cantidad maxima es 4.");
+      toast.error("Si usas semanas, la cantidad maxima es 4.");
       return;
     }
 
@@ -233,15 +235,16 @@ export function ScrumHomePage() {
         method: "PATCH",
         body: JSON.stringify({
           durationUnit: editingDurationUnit,
-          durationValue: Math.round(parsedDurationValue)
+          durationValue: Math.round(parsedDurationValue),
+          difficulty: editingDifficulty
         })
       });
 
       setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
       setEditingTaskId(null);
-      setFeedbackMessage(null);
+      toast.success("Plazo actualizado.");
     } catch {
-      setFeedbackMessage("No se pudo actualizar el plazo.");
+      toast.error("No se pudo actualizar el plazo.");
     }
   }
 
@@ -249,9 +252,9 @@ export function ScrumHomePage() {
     try {
       const response = await requestJson<{ ok: boolean; item: ClientBilling }>(`/scrum/clients/${clientId}/payment`, { method: "PATCH" });
       setClients((currentClients) => currentClients.map((client) => (client.id === clientId ? response.item : client)));
-      setFeedbackMessage(null);
+      toast.success("Pago registrado.");
     } catch {
-      setFeedbackMessage("No se pudo registrar el pago.");
+      toast.error("No se pudo registrar el pago.");
     }
   }
 
@@ -260,9 +263,9 @@ export function ScrumHomePage() {
       await requestJson<{ ok: boolean }>(`/scrum/clients/${clientId}`, { method: "DELETE" });
       setClients((currentClients) => currentClients.filter((client) => client.id !== clientId));
       setExpandedClientId((currentExpandedId) => (currentExpandedId === clientId ? null : currentExpandedId));
-      setFeedbackMessage(null);
+      toast.success("Cliente eliminado.");
     } catch {
-      setFeedbackMessage("No se pudo borrar el cliente.");
+      toast.error("No se pudo borrar el cliente.");
     }
   }
 
@@ -291,9 +294,9 @@ export function ScrumHomePage() {
       setClientAmount("");
       setClientFrequency("monthly");
       setClientNextPaymentAt("2026-08-05");
-      setFeedbackMessage(null);
+      toast.success("Cliente creado.");
     } catch {
-      setFeedbackMessage("No se pudo crear el cliente.");
+      toast.error("No se pudo crear el cliente.");
     }
   }
 
@@ -313,6 +316,7 @@ export function ScrumHomePage() {
     setEditingTaskId(task.id);
     setEditingDurationUnit(task.durationUnit);
     setEditingDurationValue(String(task.durationValue));
+    setEditingDifficulty(task.difficulty);
   }
 
   return (
@@ -382,11 +386,13 @@ export function ScrumHomePage() {
       <ScrumDurationModal
         editingDurationUnit={editingDurationUnit}
         editingDurationValue={editingDurationValue}
+        editingDifficulty={editingDifficulty}
         editingTaskId={editingTaskId}
         onClose={() => setEditingTaskId(null)}
         onSave={handleUpdateTaskDuration}
         setEditingDurationUnit={setEditingDurationUnit}
         setEditingDurationValue={setEditingDurationValue}
+        setEditingDifficulty={setEditingDifficulty}
       />
     </main>
   );
