@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchPublishedFrontendBuildMeta, FRONTEND_BUILD_INFO } from "../config/build";
 
 const UPDATE_CHECK_INTERVAL_MS = 2 * 60 * 1000;
+const APP_CACHE_PREFIX = "scrum-";
 
 export function AppUpdateNotice() {
   const [show, setShow] = useState(false);
@@ -51,12 +52,17 @@ export function AppUpdateNotice() {
     try {
       if ("serviceWorker" in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
+        const appBasePath = new URL(import.meta.env.BASE_URL, window.location.href).pathname;
+        await Promise.all(
+          registrations
+            .filter((registration) => registration.scope.includes(appBasePath))
+            .map((registration) => registration.unregister())
+        );
       }
 
       if ("caches" in window) {
         const keys = await window.caches.keys();
-        await Promise.all(keys.map((key) => window.caches.delete(key)));
+        await Promise.all(keys.filter((key) => key.startsWith(APP_CACHE_PREFIX)).map((key) => window.caches.delete(key)));
       }
     } catch {
       // If cleanup fails, still force a reload so the app can try again.
