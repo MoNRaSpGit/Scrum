@@ -27,6 +27,17 @@ export function formatDate(value: string) {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+export function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
 export function getClientAlertState(nextPaymentAt: string, now: number): ClientAlertState {
   const today = new Date(now);
   const dueDate = new Date(`${nextPaymentAt}T00:00:00`);

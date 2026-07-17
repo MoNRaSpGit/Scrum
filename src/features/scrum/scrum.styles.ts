@@ -81,7 +81,7 @@ export const formGridStyle: CSSProperties = {
 };
 export const clientFormGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(180px, 1fr)) auto",
+  gridTemplateColumns: "repeat(5, minmax(160px, 1fr)) auto",
   gap: 14,
   alignItems: "end"
 };
@@ -248,6 +248,35 @@ export const clientActionsStyle: CSSProperties = { display: "flex", gap: 8, flex
 export const clientMetaGridStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const clientPrimaryValueStyle: CSSProperties = { fontSize: 18, fontWeight: 800 };
 export const clientFooterStyle: CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
+export const debtPanelStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+  padding: 14,
+  border: "1px solid #edf1f7",
+  borderRadius: 8,
+  background: "#f8fbff"
+};
+export const debtSummaryRowStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
+export const debtPaymentFormStyle: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
+export const debtAmountInputStyle: CSSProperties = { ...inputStyle, minHeight: 38, width: 140 };
+export const debtHistoryListStyle: CSSProperties = { display: "grid", gap: 8 };
+export const debtHistoryRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 12,
+  fontSize: 13,
+  color: "#44526b",
+  borderTop: "1px solid #edf1f7",
+  paddingTop: 8
+};
+export const debtHistoryTotalRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 12,
+  fontWeight: 800,
+  borderTop: "1px solid #d7dfeb",
+  paddingTop: 8
+};
 export const modalOverlayStyle: CSSProperties = {
   position: "fixed",
   inset: 0,

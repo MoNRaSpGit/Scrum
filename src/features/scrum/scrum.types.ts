@@ -20,12 +20,22 @@ export type ScrumTask = {
   completedAt: number | null;
 };
 
+export type ClientDebtPayment = {
+  id: number;
+  amount: number;
+  paidAt: string;
+};
+
 export type ClientBilling = {
   id: number;
   name: string;
   amount: number;
   frequency: BillingFrequency;
   nextPaymentAt: string;
+  debtAmount: number | null;
+  debtPaidAmount: number;
+  debtRemaining: number | null;
+  debtPayments: ClientDebtPayment[];
 };
 
 export type BoardTimerHistoryEntry = {

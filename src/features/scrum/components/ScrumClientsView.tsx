@@ -1,4 +1,4 @@
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { BILLING_FREQUENCY_LABELS, CLIENT_ALERT_STYLES, type BillingFrequency, type ClientBilling } from "../scrum.types";
 import {
   clientActionsStyle,
@@ -12,6 +12,13 @@ import {
   clientRowButtonStyle,
   clientStatusBadgeStyle,
   columnCaptionStyle,
+  debtAmountInputStyle,
+  debtHistoryListStyle,
+  debtHistoryRowStyle,
+  debtHistoryTotalRowStyle,
+  debtPanelStyle,
+  debtPaymentFormStyle,
+  debtSummaryRowStyle,
   deleteButtonStyle,
   emptyStateStyle,
   fieldGroupStyle,
@@ -25,10 +32,11 @@ import {
   primaryButtonStyle,
   secondaryButtonStyle
 } from "../scrum.styles";
-import { formatCurrency, formatDate, getClientAlertState, getClientRelativeLabel } from "../scrum.utils";
+import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel } from "../scrum.utils";
 
 type ScrumClientsViewProps = {
   clientAmount: string;
+  clientDebtAmount: string;
   clientFrequency: BillingFrequency;
   clientName: string;
   clientNextPaymentAt: string;
@@ -37,16 +45,90 @@ type ScrumClientsViewProps = {
   now: number;
   onCreateClient: (event: FormEvent<HTMLFormElement>) => void;
   onDeleteClient: (clientId: number) => void;
+  onRegisterClientDebtPayment: (clientId: number, amount: string) => void;
   onRegisterClientPayment: (clientId: number) => void;
   setClientAmount: Dispatch<SetStateAction<string>>;
+  setClientDebtAmount: Dispatch<SetStateAction<string>>;
   setClientFrequency: Dispatch<SetStateAction<BillingFrequency>>;
   setClientName: Dispatch<SetStateAction<string>>;
   setClientNextPaymentAt: Dispatch<SetStateAction<string>>;
   setExpandedClientId: Dispatch<SetStateAction<number | null>>;
 };
 
+function ClientDebtPanel({
+  client,
+  onRegisterClientDebtPayment
+}: {
+  client: ClientBilling;
+  onRegisterClientDebtPayment: (clientId: number, amount: string) => void;
+}) {
+  const [debtPaymentInput, setDebtPaymentInput] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
+
+  if (client.debtAmount === null) {
+    return null;
+  }
+
+  const isSettled = (client.debtRemaining ?? 0) <= 0;
+
+  return (
+    <div style={debtPanelStyle}>
+      <div style={debtSummaryRowStyle}>
+        <span style={metaChipStyle}>
+          Deuda: {isSettled ? "saldada" : `${formatCurrency(client.debtRemaining ?? 0)} de ${formatCurrency(client.debtAmount)}`}
+        </span>
+        {client.debtPayments.length > 0 ? (
+          <button type="button" onClick={() => setShowDetails((current) => !current)} style={secondaryButtonStyle}>
+            {showDetails ? "Ocultar detalles" : "Detalles"}
+          </button>
+        ) : null}
+      </div>
+
+      {!isSettled ? (
+        <div style={debtPaymentFormStyle}>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={debtPaymentInput}
+            onChange={(event) => setDebtPaymentInput(event.target.value)}
+            placeholder="Monto pagado"
+            style={debtAmountInputStyle}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              onRegisterClientDebtPayment(client.id, debtPaymentInput);
+              setDebtPaymentInput("");
+            }}
+            style={secondaryButtonStyle}
+          >
+            Registrar pago de deuda
+          </button>
+        </div>
+      ) : null}
+
+      {showDetails ? (
+        <div style={debtHistoryListStyle}>
+          {client.debtPayments.map((payment) => (
+            <div key={payment.id} style={debtHistoryRowStyle}>
+              <span>{formatDateTime(payment.paidAt)}</span>
+              <span>{formatCurrency(payment.amount)}</span>
+            </div>
+          ))}
+          <div style={debtHistoryTotalRowStyle}>
+            <span>Total pagado</span>
+            <span>{formatCurrency(client.debtPaidAmount)}</span>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ScrumClientsView({
   clientAmount,
+  clientDebtAmount,
   clientFrequency,
   clientName,
   clientNextPaymentAt,
@@ -55,8 +137,10 @@ export function ScrumClientsView({
   now,
   onCreateClient,
   onDeleteClient,
+  onRegisterClientDebtPayment,
   onRegisterClientPayment,
   setClientAmount,
+  setClientDebtAmount,
   setClientFrequency,
   setClientName,
   setClientNextPaymentAt,
@@ -124,6 +208,22 @@ export function ScrumClientsView({
             />
           </div>
 
+          <div style={fieldGroupStyle}>
+            <label style={labelStyle} htmlFor="client-debt-amount">
+              Monto adeudado (opcional)
+            </label>
+            <input
+              id="client-debt-amount"
+              type="number"
+              min="0"
+              step="1"
+              value={clientDebtAmount}
+              onChange={(event) => setClientDebtAmount(event.target.value)}
+              placeholder="Ej: 4000"
+              style={inputStyle}
+            />
+          </div>
+
           <div style={formActionsStyle}>
             <button type="submit" style={primaryButtonStyle}>
               Crear cliente
@@ -169,6 +269,8 @@ export function ScrumClientsView({
                       {getClientRelativeLabel(client.nextPaymentAt, now)}
                     </span>
                   </div>
+
+                  <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
 
                   <div style={clientActionsStyle}>
                     <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={secondaryButtonStyle}>

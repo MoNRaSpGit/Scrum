@@ -42,6 +42,7 @@ export function ScrumHomePage() {
   const [expandedClientId, setExpandedClientId] = useState<number | null>(INITIAL_CLIENTS[0]?.id ?? null);
   const [clientName, setClientName] = useState("");
   const [clientAmount, setClientAmount] = useState("");
+  const [clientDebtAmount, setClientDebtAmount] = useState("");
   const [clientFrequency, setClientFrequency] = useState<"monthly" | "semiannual">("monthly");
   const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
@@ -283,6 +284,25 @@ export function ScrumHomePage() {
     }
   }
 
+  async function handleRegisterClientDebtPayment(clientId: number, amountInput: string) {
+    const parsedAmount = Number(amountInput);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast.error("Ingresa un monto valido mayor a 0.");
+      return;
+    }
+
+    try {
+      const response = await requestJson<{ ok: boolean; item: ClientBilling }>(`/scrum/clients/${clientId}/debt-payment`, {
+        method: "PATCH",
+        body: JSON.stringify({ amount: parsedAmount })
+      });
+      setClients((currentClients) => currentClients.map((client) => (client.id === clientId ? response.item : client)));
+      toast.success("Pago de deuda registrado.");
+    } catch {
+      toast.error("No se pudo registrar el pago de deuda.");
+    }
+  }
+
   async function handleDeleteClient(clientId: number) {
     try {
       await requestJson<{ ok: boolean }>(`/scrum/clients/${clientId}`, { method: "DELETE" });
@@ -298,7 +318,14 @@ export function ScrumHomePage() {
     event.preventDefault();
     const normalizedName = clientName.trim();
     const parsedAmount = Number(clientAmount);
+    const trimmedDebtAmount = clientDebtAmount.trim();
+    const parsedDebtAmount = trimmedDebtAmount ? Number(trimmedDebtAmount) : null;
+
     if (!normalizedName || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || !clientNextPaymentAt) {
+      return;
+    }
+    if (trimmedDebtAmount && (!Number.isFinite(parsedDebtAmount) || (parsedDebtAmount as number) < 0)) {
+      toast.error("El monto adeudado tiene que ser un numero valido.");
       return;
     }
 
@@ -309,7 +336,8 @@ export function ScrumHomePage() {
           name: normalizedName,
           amount: Math.round(parsedAmount),
           frequency: clientFrequency,
-          nextPaymentAt: clientNextPaymentAt
+          nextPaymentAt: clientNextPaymentAt,
+          debtAmount: parsedDebtAmount !== null ? Math.round(parsedDebtAmount) : undefined
         })
       });
 
@@ -317,6 +345,7 @@ export function ScrumHomePage() {
       setExpandedClientId(response.item.id);
       setClientName("");
       setClientAmount("");
+      setClientDebtAmount("");
       setClientFrequency("monthly");
       setClientNextPaymentAt("2026-08-05");
       toast.success("Cliente creado.");
@@ -391,6 +420,7 @@ export function ScrumHomePage() {
       {!isLoadingWorkspace && viewMode === "clients" ? (
         <ScrumClientsView
           clientAmount={clientAmount}
+          clientDebtAmount={clientDebtAmount}
           clientFrequency={clientFrequency}
           clientName={clientName}
           clientNextPaymentAt={clientNextPaymentAt}
@@ -399,8 +429,10 @@ export function ScrumHomePage() {
           now={now}
           onCreateClient={handleCreateClient}
           onDeleteClient={handleDeleteClient}
+          onRegisterClientDebtPayment={handleRegisterClientDebtPayment}
           onRegisterClientPayment={handleRegisterClientPayment}
           setClientAmount={setClientAmount}
+          setClientDebtAmount={setClientDebtAmount}
           setClientFrequency={setClientFrequency}
           setClientName={setClientName}
           setClientNextPaymentAt={setClientNextPaymentAt}
