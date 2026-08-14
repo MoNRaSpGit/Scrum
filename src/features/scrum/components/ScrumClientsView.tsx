@@ -45,6 +45,7 @@ type ScrumClientsViewProps = {
   now: number;
   onCreateClient: (event: FormEvent<HTMLFormElement>) => void;
   onDeleteClient: (clientId: number) => void;
+  onOpenEditClient: (client: ClientBilling) => void;
   onRegisterClientDebtPayment: (clientId: number, amount: string) => void;
   onRegisterClientPayment: (clientId: number) => void;
   setClientAmount: Dispatch<SetStateAction<string>>;
@@ -137,6 +138,7 @@ export function ScrumClientsView({
   now,
   onCreateClient,
   onDeleteClient,
+  onOpenEditClient,
   onRegisterClientDebtPayment,
   onRegisterClientPayment,
   setClientAmount,
@@ -273,6 +275,9 @@ export function ScrumClientsView({
                   <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
 
                   <div style={clientActionsStyle}>
+                    <button type="button" onClick={() => onOpenEditClient(client)} style={secondaryButtonStyle}>
+                      Editar
+                    </button>
                     <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={secondaryButtonStyle}>
                       Registrar pago
                     </button>

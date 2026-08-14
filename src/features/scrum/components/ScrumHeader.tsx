@@ -9,6 +9,7 @@ import {
   headerTabsAlignStyle,
   heroStyle,
   noticeStyle,
+  secondaryButtonStyle,
   tabButtonStyle,
   tabsWrapStyle,
   titleRowStyle,
@@ -20,6 +21,7 @@ type ScrumHeaderProps = {
   boardTimerValue: string;
   feedbackMessage: string | null;
   onToggleBoardTimer: () => void;
+  onEditBoardTimer: () => void;
   viewMode: ViewMode;
   onChangeViewMode: (mode: ViewMode) => void;
 };
@@ -29,6 +31,7 @@ export function ScrumHeader({
   boardTimerValue,
   feedbackMessage,
   onToggleBoardTimer,
+  onEditBoardTimer,
   viewMode,
   onChangeViewMode
 }: ScrumHeaderProps) {
@@ -42,6 +45,9 @@ export function ScrumHeader({
           <div style={boardTimerWrapStyle}>
             <button type="button" onClick={onToggleBoardTimer} style={boardTimerButtonStyle(boardTimerRunning)}>
               {boardTimerRunning ? "Detener cronometro" : "Iniciar cronometro"}
+            </button>
+            <button type="button" onClick={onEditBoardTimer} style={secondaryButtonStyle}>
+              Editar
             </button>
           </div>
           <div style={boardTimerPanelStyle}>

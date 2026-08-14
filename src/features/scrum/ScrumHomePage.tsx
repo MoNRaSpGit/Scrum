@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { ScrumBoardView } from "./components/ScrumBoardView";
+import { ScrumClientEditModal } from "./components/ScrumClientEditModal";
 import { ScrumClientsView } from "./components/ScrumClientsView";
 import { ScrumDurationModal } from "./components/ScrumDurationModal";
 import { ScrumHeader } from "./components/ScrumHeader";
 import { ScrumHistoryView } from "./components/ScrumHistoryView";
+import { ScrumTimerEditModal } from "./components/ScrumTimerEditModal";
 import { requestJson } from "./scrum.api";
 import { loadingPanelStyle, pageStyle, emptyStateStyle } from "./scrum.styles";
 import {
   INITIAL_CLIENTS,
   INITIAL_TASKS,
+  type BillingFrequency,
   type BoardTimerHistoryDisplayEntry,
   type ClientBilling,
   type ScrumTask,
@@ -52,6 +55,15 @@ export function ScrumHomePage() {
   const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
   const [editingDurationValue, setEditingDurationValue] = useState("1");
   const [boardTimerState, setBoardTimerState] = useState(() => getInitialBoardTimerState(Date.now()));
+  const [isEditingTimer, setIsEditingTimer] = useState(false);
+  const [editingTimerHours, setEditingTimerHours] = useState("0");
+  const [editingTimerMinutes, setEditingTimerMinutes] = useState("0");
+  const [editingClient, setEditingClient] = useState<ClientBilling | null>(null);
+  const [editingClientName, setEditingClientName] = useState("");
+  const [editingClientAmount, setEditingClientAmount] = useState("");
+  const [editingClientFrequency, setEditingClientFrequency] = useState<BillingFrequency>("monthly");
+  const [editingClientNextPaymentAt, setEditingClientNextPaymentAt] = useState("");
+  const [isSavingClientEdit, setIsSavingClientEdit] = useState(false);
 
   const currentDayKey = getMontevideoDateKey(now);
   const boardElapsedSeconds =
@@ -366,6 +378,86 @@ export function ScrumHomePage() {
     setFeedbackMessage(null);
   }
 
+  function handleOpenEditTimer() {
+    const totalSeconds = boardElapsedSeconds;
+    setEditingTimerHours(String(Math.floor(totalSeconds / 3600)));
+    setEditingTimerMinutes(String(Math.floor((totalSeconds % 3600) / 60)));
+    setIsEditingTimer(true);
+  }
+
+  // Fija el tiempo acumulado de hoy al valor cargado a mano. Si el
+  // cronometro esta corriendo, rebasea el arranque a "ahora" para que el
+  // tiempo en vivo siga sumando desde el nuevo valor en vez de duplicar lo
+  // que ya venia corriendo.
+  function handleSaveTimerEdit() {
+    const parsedHours = Number(editingTimerHours);
+    const parsedMinutes = Number(editingTimerMinutes);
+
+    if (!Number.isFinite(parsedHours) || parsedHours < 0 || !Number.isFinite(parsedMinutes) || parsedMinutes < 0) {
+      toast.error("Ingresa horas y minutos validos.");
+      return;
+    }
+
+    const totalSeconds = Math.round(parsedHours) * 3600 + Math.round(parsedMinutes) * 60;
+
+    setBoardTimerState((currentState) => ({
+      ...currentState,
+      trackedSeconds: totalSeconds,
+      timerStartedAt: currentState.timerStartedAt ? Date.now() : null
+    }));
+    setIsEditingTimer(false);
+    toast.success("Cronometro actualizado.");
+  }
+
+  function handleOpenEditClient(client: ClientBilling) {
+    setEditingClient(client);
+    setEditingClientName(client.name);
+    setEditingClientAmount(String(client.amount));
+    setEditingClientFrequency(client.frequency);
+    setEditingClientNextPaymentAt(client.nextPaymentAt.slice(0, 10));
+  }
+
+  async function handleUpdateClient() {
+    if (!editingClient) return;
+
+    const normalizedName = editingClientName.trim();
+    const parsedAmount = Number(editingClientAmount);
+
+    if (!normalizedName) {
+      toast.error("Ponele un nombre al cliente.");
+      return;
+    }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast.error("Ingresa un monto valido mayor a 0.");
+      return;
+    }
+    if (!editingClientNextPaymentAt) {
+      toast.error("Falta la fecha del proximo pago.");
+      return;
+    }
+
+    setIsSavingClientEdit(true);
+    try {
+      const response = await requestJson<{ ok: boolean; item: ClientBilling }>(`/scrum/clients/${editingClient.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: normalizedName,
+          amount: Math.round(parsedAmount),
+          frequency: editingClientFrequency,
+          nextPaymentAt: editingClientNextPaymentAt
+        })
+      });
+
+      setClients((currentClients) => currentClients.map((client) => (client.id === editingClient.id ? response.item : client)));
+      setEditingClient(null);
+      toast.success("Cliente actualizado.");
+    } catch {
+      toast.error("No se pudo actualizar el cliente.");
+    } finally {
+      setIsSavingClientEdit(false);
+    }
+  }
+
   function handleOpenEditTask(task: ScrumTask) {
     setEditingTaskId(task.id);
     setEditingDurationUnit(task.durationUnit);
@@ -380,6 +472,7 @@ export function ScrumHomePage() {
         boardTimerValue={formatTrackedTime(boardElapsedSeconds)}
         feedbackMessage={feedbackMessage}
         onToggleBoardTimer={handleBoardTimerToggle}
+        onEditBoardTimer={handleOpenEditTimer}
         viewMode={viewMode}
         onChangeViewMode={setViewMode}
       />
@@ -429,6 +522,7 @@ export function ScrumHomePage() {
           now={now}
           onCreateClient={handleCreateClient}
           onDeleteClient={handleDeleteClient}
+          onOpenEditClient={handleOpenEditClient}
           onRegisterClientDebtPayment={handleRegisterClientDebtPayment}
           onRegisterClientPayment={handleRegisterClientPayment}
           setClientAmount={setClientAmount}
@@ -451,6 +545,31 @@ export function ScrumHomePage() {
         setEditingDurationUnit={setEditingDurationUnit}
         setEditingDurationValue={setEditingDurationValue}
         setEditingDifficulty={setEditingDifficulty}
+      />
+
+      <ScrumTimerEditModal
+        isOpen={isEditingTimer}
+        hoursInput={editingTimerHours}
+        minutesInput={editingTimerMinutes}
+        onClose={() => setIsEditingTimer(false)}
+        onSave={handleSaveTimerEdit}
+        setHoursInput={setEditingTimerHours}
+        setMinutesInput={setEditingTimerMinutes}
+      />
+
+      <ScrumClientEditModal
+        editingClient={editingClient}
+        editingClientName={editingClientName}
+        editingClientAmount={editingClientAmount}
+        editingClientFrequency={editingClientFrequency}
+        editingClientNextPaymentAt={editingClientNextPaymentAt}
+        isSaving={isSavingClientEdit}
+        onClose={() => setEditingClient(null)}
+        onSave={handleUpdateClient}
+        setEditingClientName={setEditingClientName}
+        setEditingClientAmount={setEditingClientAmount}
+        setEditingClientFrequency={setEditingClientFrequency}
+        setEditingClientNextPaymentAt={setEditingClientNextPaymentAt}
       />
     </main>
   );
