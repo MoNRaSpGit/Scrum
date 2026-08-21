@@ -63,6 +63,7 @@ export function ScrumHomePage() {
   const [editingClientAmount, setEditingClientAmount] = useState("");
   const [editingClientFrequency, setEditingClientFrequency] = useState<BillingFrequency>("monthly");
   const [editingClientNextPaymentAt, setEditingClientNextPaymentAt] = useState("");
+  const [editingClientAmountChangeDescription, setEditingClientAmountChangeDescription] = useState("");
   const [isSavingClientEdit, setIsSavingClientEdit] = useState(false);
 
   const currentDayKey = getMontevideoDateKey(now);
@@ -415,6 +416,7 @@ export function ScrumHomePage() {
     setEditingClientAmount(String(client.amount));
     setEditingClientFrequency(client.frequency);
     setEditingClientNextPaymentAt(client.nextPaymentAt.slice(0, 10));
+    setEditingClientAmountChangeDescription("");
   }
 
   async function handleUpdateClient() {
@@ -422,6 +424,8 @@ export function ScrumHomePage() {
 
     const normalizedName = editingClientName.trim();
     const parsedAmount = Number(editingClientAmount);
+    const amountChanged = Number.isFinite(parsedAmount) && Math.round(parsedAmount) !== Math.round(editingClient.amount);
+    const normalizedAmountChangeDescription = editingClientAmountChangeDescription.trim();
 
     if (!normalizedName) {
       toast.error("Ponele un nombre al cliente.");
@@ -435,6 +439,10 @@ export function ScrumHomePage() {
       toast.error("Falta la fecha del proximo pago.");
       return;
     }
+    if (amountChanged && !normalizedAmountChangeDescription) {
+      toast.error("Agrega una descripcion para el cambio de monto.");
+      return;
+    }
 
     setIsSavingClientEdit(true);
     try {
@@ -444,7 +452,8 @@ export function ScrumHomePage() {
           name: normalizedName,
           amount: Math.round(parsedAmount),
           frequency: editingClientFrequency,
-          nextPaymentAt: editingClientNextPaymentAt
+          nextPaymentAt: editingClientNextPaymentAt,
+          amountChangeDescription: amountChanged ? normalizedAmountChangeDescription : undefined
         })
       });
 
@@ -563,6 +572,7 @@ export function ScrumHomePage() {
         editingClientAmount={editingClientAmount}
         editingClientFrequency={editingClientFrequency}
         editingClientNextPaymentAt={editingClientNextPaymentAt}
+        editingClientAmountChangeDescription={editingClientAmountChangeDescription}
         isSaving={isSavingClientEdit}
         onClose={() => setEditingClient(null)}
         onSave={handleUpdateClient}
@@ -570,6 +580,7 @@ export function ScrumHomePage() {
         setEditingClientAmount={setEditingClientAmount}
         setEditingClientFrequency={setEditingClientFrequency}
         setEditingClientNextPaymentAt={setEditingClientNextPaymentAt}
+        setEditingClientAmountChangeDescription={setEditingClientAmountChangeDescription}
       />
     </main>
   );

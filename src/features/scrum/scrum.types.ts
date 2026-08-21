@@ -26,6 +26,15 @@ export type ClientDebtPayment = {
   paidAt: string;
 };
 
+export type ClientAmountChange = {
+  id: number;
+  previousAmount: number;
+  newAmount: number;
+  delta: number;
+  description: string;
+  changedAt: string;
+};
+
 export type ClientBilling = {
   id: number;
   name: string;
@@ -36,6 +45,7 @@ export type ClientBilling = {
   debtPaidAmount: number;
   debtRemaining: number | null;
   debtPayments: ClientDebtPayment[];
+  amountHistory: ClientAmountChange[];
 };
 
 export type BoardTimerHistoryEntry = {

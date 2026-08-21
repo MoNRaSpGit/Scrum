@@ -11,7 +11,7 @@ import {
   modalOverlayStyle,
   primaryButtonStyle
 } from "../scrum.styles";
-import { formatCurrency } from "../scrum.utils";
+import { formatCurrency, formatDate } from "../scrum.utils";
 
 type ScrumClientEditModalProps = {
   editingClient: ClientBilling | null;
@@ -19,6 +19,7 @@ type ScrumClientEditModalProps = {
   editingClientAmount: string;
   editingClientFrequency: BillingFrequency;
   editingClientNextPaymentAt: string;
+  editingClientAmountChangeDescription: string;
   isSaving: boolean;
   onClose: () => void;
   onSave: () => void;
@@ -26,6 +27,7 @@ type ScrumClientEditModalProps = {
   setEditingClientAmount: Dispatch<SetStateAction<string>>;
   setEditingClientFrequency: Dispatch<SetStateAction<BillingFrequency>>;
   setEditingClientNextPaymentAt: Dispatch<SetStateAction<string>>;
+  setEditingClientAmountChangeDescription: Dispatch<SetStateAction<string>>;
 };
 
 // Horizontes de proyeccion segun la frecuencia: para mensual tiene sentido
@@ -48,13 +50,15 @@ export function ScrumClientEditModal({
   editingClientAmount,
   editingClientFrequency,
   editingClientNextPaymentAt,
+  editingClientAmountChangeDescription,
   isSaving,
   onClose,
   onSave,
   setEditingClientName,
   setEditingClientAmount,
   setEditingClientFrequency,
-  setEditingClientNextPaymentAt
+  setEditingClientNextPaymentAt,
+  setEditingClientAmountChangeDescription
 }: ScrumClientEditModalProps) {
   if (!editingClient) {
     return null;
@@ -62,6 +66,8 @@ export function ScrumClientEditModal({
 
   const parsedAmount = Number(editingClientAmount);
   const projection = Number.isFinite(parsedAmount) && parsedAmount > 0 ? buildAmountProjection(parsedAmount, editingClientFrequency) : [];
+  const amountChanged = Number.isFinite(parsedAmount) && Math.round(parsedAmount) !== Math.round(editingClient.amount);
+  const sortedHistory = [...editingClient.amountHistory].sort((a, b) => b.changedAt.localeCompare(a.changedAt));
 
   return (
     <div style={modalOverlayStyle} onClick={onClose}>
@@ -99,6 +105,21 @@ export function ScrumClientEditModal({
             style={compactInputStyle}
           />
         </div>
+
+        {amountChanged ? (
+          <div style={fieldGroupStyle}>
+            <label style={labelStyle} htmlFor="edit-client-amount-description">
+              Descripcion del cambio de monto
+            </label>
+            <input
+              id="edit-client-amount-description"
+              value={editingClientAmountChangeDescription}
+              onChange={(event) => setEditingClientAmountChangeDescription(event.target.value)}
+              placeholder="Ej: solucion de caja registradora"
+              style={compactInputStyle}
+            />
+          </div>
+        ) : null}
 
         <div style={fieldGroupStyle}>
           <label style={labelStyle} htmlFor="edit-client-frequency">
@@ -139,6 +160,24 @@ export function ScrumClientEditModal({
                 <span key={entry.months} style={metaChipStyle}>
                   {entry.months} meses ({entry.payments} {entry.payments === 1 ? "pago" : "pagos"}): <strong>{formatCurrency(entry.total)}</strong>
                 </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {sortedHistory.length ? (
+          <div style={fieldGroupStyle}>
+            <span style={labelStyle}>Historial de cambios de monto</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {sortedHistory.map((change) => (
+                <div key={change.id} style={{ fontSize: 13, color: "#4b5568" }}>
+                  <strong>{formatDate(change.changedAt.slice(0, 10))}</strong>{" "}
+                  <span style={{ color: change.delta >= 0 ? "#1f6f31" : "#9e2b2b", fontWeight: 700 }}>
+                    {change.delta >= 0 ? "+" : ""}
+                    {formatCurrency(change.delta)}
+                  </span>{" "}
+                  ({formatCurrency(change.previousAmount)} → {formatCurrency(change.newAmount)}) — {change.description}
+                </div>
               ))}
             </div>
           </div>
