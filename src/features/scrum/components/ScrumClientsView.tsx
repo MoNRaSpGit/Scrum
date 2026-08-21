@@ -281,7 +281,15 @@ export function ScrumClientsView({
                     <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={secondaryButtonStyle}>
                       Registrar pago
                     </button>
-                    <button type="button" onClick={() => onDeleteClient(client.id)} style={deleteButtonStyle}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Eliminar a "${client.name}"? Se borra tambien su historial de pagos y de montos.`)) {
+                          onDeleteClient(client.id);
+                        }
+                      }}
+                      style={deleteButtonStyle}
+                    >
                       Eliminar cliente
                     </button>
                   </div>
