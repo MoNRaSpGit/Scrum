@@ -60,11 +60,12 @@ export function ScrumHomePage() {
   const [editingTimerMinutes, setEditingTimerMinutes] = useState("0");
   const [editingClient, setEditingClient] = useState<ClientBilling | null>(null);
   const [editingClientName, setEditingClientName] = useState("");
-  const [editingClientAmount, setEditingClientAmount] = useState("");
   const [editingClientFrequency, setEditingClientFrequency] = useState<BillingFrequency>("monthly");
   const [editingClientNextPaymentAt, setEditingClientNextPaymentAt] = useState("");
-  const [editingClientAmountChangeDescription, setEditingClientAmountChangeDescription] = useState("");
+  const [editingClientAmountDelta, setEditingClientAmountDelta] = useState("");
+  const [editingClientAmountDeltaDescription, setEditingClientAmountDeltaDescription] = useState("");
   const [isSavingClientEdit, setIsSavingClientEdit] = useState(false);
+  const [isAddingAmountChange, setIsAddingAmountChange] = useState(false);
 
   const currentDayKey = getMontevideoDateKey(now);
   const boardElapsedSeconds =
@@ -413,34 +414,23 @@ export function ScrumHomePage() {
   function handleOpenEditClient(client: ClientBilling) {
     setEditingClient(client);
     setEditingClientName(client.name);
-    setEditingClientAmount(String(client.amount));
     setEditingClientFrequency(client.frequency);
     setEditingClientNextPaymentAt(client.nextPaymentAt.slice(0, 10));
-    setEditingClientAmountChangeDescription("");
+    setEditingClientAmountDelta("");
+    setEditingClientAmountDeltaDescription("");
   }
 
   async function handleUpdateClient() {
     if (!editingClient) return;
 
     const normalizedName = editingClientName.trim();
-    const parsedAmount = Number(editingClientAmount);
-    const amountChanged = Number.isFinite(parsedAmount) && Math.round(parsedAmount) !== Math.round(editingClient.amount);
-    const normalizedAmountChangeDescription = editingClientAmountChangeDescription.trim();
 
     if (!normalizedName) {
       toast.error("Ponele un nombre al cliente.");
       return;
     }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      toast.error("Ingresa un monto valido mayor a 0.");
-      return;
-    }
     if (!editingClientNextPaymentAt) {
       toast.error("Falta la fecha del proximo pago.");
-      return;
-    }
-    if (amountChanged && !normalizedAmountChangeDescription) {
-      toast.error("Agrega una descripcion para el cambio de monto.");
       return;
     }
 
@@ -450,20 +440,66 @@ export function ScrumHomePage() {
         method: "PATCH",
         body: JSON.stringify({
           name: normalizedName,
-          amount: Math.round(parsedAmount),
           frequency: editingClientFrequency,
-          nextPaymentAt: editingClientNextPaymentAt,
-          amountChangeDescription: amountChanged ? normalizedAmountChangeDescription : undefined
+          nextPaymentAt: editingClientNextPaymentAt
         })
       });
 
       setClients((currentClients) => currentClients.map((client) => (client.id === editingClient.id ? response.item : client)));
-      setEditingClient(null);
+      setEditingClient(response.item);
       toast.success("Cliente actualizado.");
     } catch {
       toast.error("No se pudo actualizar el cliente.");
     } finally {
       setIsSavingClientEdit(false);
+    }
+  }
+
+  // El monto se guarda por ciclo de facturacion (ver ScrumClientEditModal),
+  // asi que el delta que carga el operario (siempre en terminos mensuales)
+  // hay que reconvertirlo antes de mandarlo.
+  async function handleAddAmountChange() {
+    if (!editingClient) return;
+
+    const parsedDelta = Number(editingClientAmountDelta);
+    const normalizedDescription = editingClientAmountDeltaDescription.trim();
+
+    if (!Number.isFinite(parsedDelta) || parsedDelta === 0) {
+      toast.error("Ingresa un monto distinto de 0.");
+      return;
+    }
+    if (!normalizedDescription) {
+      toast.error("Agrega una descripcion para el cambio.");
+      return;
+    }
+
+    const cycleMonths = editingClient.frequency === "monthly" ? 1 : 6;
+    const nextMonthlyAmount = editingClient.amount / cycleMonths + parsedDelta;
+    if (nextMonthlyAmount <= 0) {
+      toast.error("El monto por mes no puede quedar en 0 o negativo.");
+      return;
+    }
+    const nextAmount = Math.round(nextMonthlyAmount * cycleMonths);
+
+    setIsAddingAmountChange(true);
+    try {
+      const response = await requestJson<{ ok: boolean; item: ClientBilling }>(`/scrum/clients/${editingClient.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          amount: nextAmount,
+          amountChangeDescription: normalizedDescription
+        })
+      });
+
+      setClients((currentClients) => currentClients.map((client) => (client.id === editingClient.id ? response.item : client)));
+      setEditingClient(response.item);
+      setEditingClientAmountDelta("");
+      setEditingClientAmountDeltaDescription("");
+      toast.success("Monto actualizado.");
+    } catch {
+      toast.error("No se pudo actualizar el monto.");
+    } finally {
+      setIsAddingAmountChange(false);
     }
   }
 
@@ -569,18 +605,20 @@ export function ScrumHomePage() {
       <ScrumClientEditModal
         editingClient={editingClient}
         editingClientName={editingClientName}
-        editingClientAmount={editingClientAmount}
         editingClientFrequency={editingClientFrequency}
         editingClientNextPaymentAt={editingClientNextPaymentAt}
-        editingClientAmountChangeDescription={editingClientAmountChangeDescription}
+        editingClientAmountDelta={editingClientAmountDelta}
+        editingClientAmountDeltaDescription={editingClientAmountDeltaDescription}
         isSaving={isSavingClientEdit}
+        isAddingAmountChange={isAddingAmountChange}
         onClose={() => setEditingClient(null)}
         onSave={handleUpdateClient}
+        onAddAmountChange={handleAddAmountChange}
         setEditingClientName={setEditingClientName}
-        setEditingClientAmount={setEditingClientAmount}
         setEditingClientFrequency={setEditingClientFrequency}
         setEditingClientNextPaymentAt={setEditingClientNextPaymentAt}
-        setEditingClientAmountChangeDescription={setEditingClientAmountChangeDescription}
+        setEditingClientAmountDelta={setEditingClientAmountDelta}
+        setEditingClientAmountDeltaDescription={setEditingClientAmountDeltaDescription}
       />
     </main>
   );
