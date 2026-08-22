@@ -66,6 +66,7 @@ function DebtCard({
   onAddDebtPayment: (debtId: number, amount: string) => void;
   onUpdateDebtDueDate: (debtId: number, dueDate: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isEditingDueDate, setIsEditingDueDate] = useState(false);
   const [dueDateDraft, setDueDateDraft] = useState(debt.dueDate);
@@ -84,20 +85,24 @@ function DebtCard({
 
   return (
     <article style={clientCardStyle}>
-      <div style={clientRowButtonStyle}>
+      <button type="button" onClick={() => setExpanded((current) => !current)} style={clientRowButtonStyle}>
         <strong style={{ fontSize: 16 }}>{debt.name}</strong>
-        <span
-          style={{
-            ...clientStatusBadgeStyle,
-            background: alertStyle.background,
-            color: alertStyle.color,
-            border: `1px solid ${alertStyle.border}`
-          }}
-        >
-          {isSettled ? "Saldada" : alertStyle.label}
+        <span style={clientMetaGridStyle}>
+          <span style={clientPrimaryValueStyle}>{isSettled ? "Saldada" : formatCurrency(debt.remaining)}</span>
+          <span
+            style={{
+              ...clientStatusBadgeStyle,
+              background: alertStyle.background,
+              color: alertStyle.color,
+              border: `1px solid ${alertStyle.border}`
+            }}
+          >
+            {isSettled ? "Saldada" : alertStyle.label}
+          </span>
         </span>
-      </div>
+      </button>
 
+      {expanded ? (
       <div style={clientDetailsStyle}>
         <div style={clientMetaGridStyle}>
           <span style={clientPrimaryValueStyle}>{isSettled ? "Saldada" : formatCurrency(debt.remaining)}</span>
@@ -236,6 +241,7 @@ function DebtCard({
           </button>
         </div>
       </div>
+      ) : null}
     </article>
   );
 }
