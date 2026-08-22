@@ -89,6 +89,11 @@ function DebtCard({
         <strong style={{ fontSize: 16 }}>{debt.name}</strong>
         <span style={clientMetaGridStyle}>
           <span style={clientPrimaryValueStyle}>{isSettled ? "Saldada" : formatCurrency(debt.remaining)}</span>
+          {!isSettled ? (
+            <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
+              {getClientRelativeLabel(debt.dueDate, now)}
+            </span>
+          ) : null}
           <span
             style={{
               ...clientStatusBadgeStyle,
