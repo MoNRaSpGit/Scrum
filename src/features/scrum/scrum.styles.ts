@@ -259,6 +259,7 @@ export const debtPanelStyle: CSSProperties = {
 export const debtSummaryRowStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const debtPaymentFormStyle: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
 export const debtAmountInputStyle: CSSProperties = { ...inputStyle, minHeight: 38, width: 140 };
+export const debtDetailInputStyle: CSSProperties = { ...inputStyle, minHeight: 38, flex: 1, minWidth: 180 };
 export const debtHistoryListStyle: CSSProperties = { display: "grid", gap: 8 };
 export const debtHistoryRowStyle: CSSProperties = {
   display: "flex",

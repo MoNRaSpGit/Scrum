@@ -68,6 +68,9 @@ export function ScrumHeader({
           <button type="button" onClick={() => onChangeViewMode("clients")} style={tabButtonStyle(viewMode === "clients")}>
             Clientes
           </button>
+          <button type="button" onClick={() => onChangeViewMode("debts")} style={tabButtonStyle(viewMode === "debts")}>
+            Deudas
+          </button>
         </section>
       </div>
     </section>

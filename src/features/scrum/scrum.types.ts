@@ -1,7 +1,7 @@
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskDifficulty = "green" | "yellow" | "red" | "blue";
 export type TaskDurationUnit = "days" | "weeks" | "months";
-export type ViewMode = "board" | "history" | "clients";
+export type ViewMode = "board" | "history" | "clients" | "debts";
 export type BillingFrequency = "monthly" | "semiannual";
 export type ClientAlertState = "white" | "green" | "yellow" | "red";
 
@@ -48,6 +48,31 @@ export type ClientBilling = {
   amountHistory: ClientAmountChange[];
 };
 
+export type DebtCharge = {
+  id: number;
+  amount: number;
+  detail: string;
+  chargedAt: string;
+};
+
+export type DebtPayment = {
+  id: number;
+  amount: number;
+  paidAt: string;
+};
+
+export type ScrumDebt = {
+  id: number;
+  name: string;
+  initialAmount: number;
+  dueDate: string;
+  totalCharged: number;
+  totalPaid: number;
+  remaining: number;
+  charges: DebtCharge[];
+  payments: DebtPayment[];
+};
+
 export type BoardTimerHistoryEntry = {
   dayKey: string;
   totalSeconds: number;
@@ -71,6 +96,7 @@ export type CompletedHistoryEntry = {
 
 export const INITIAL_TASKS: ScrumTask[] = [];
 export const INITIAL_CLIENTS: ClientBilling[] = [];
+export const INITIAL_DEBTS: ScrumDebt[] = [];
 export const BOARD_TIMER_STORAGE_KEY = "frontend-scrum-board-timer";
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
