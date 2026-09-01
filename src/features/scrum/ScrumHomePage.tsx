@@ -563,7 +563,7 @@ export function ScrumHomePage() {
       });
 
       setClients((currentClients) => currentClients.map((client) => (client.id === editingClient.id ? response.item : client)));
-      setEditingClient(response.item);
+      setEditingClient(null);
       toast.success("Cliente actualizado.");
     } catch {
       toast.error("No se pudo actualizar el cliente.");

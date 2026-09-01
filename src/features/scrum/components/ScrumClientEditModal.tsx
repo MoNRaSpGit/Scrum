@@ -152,7 +152,13 @@ export function ScrumClientEditModal({
               type="button"
               onClick={onAddAmountChange}
               disabled={isAddingAmountChange}
-              style={{ ...secondaryButtonStyle, minWidth: 100 }}
+              style={{
+                ...secondaryButtonStyle,
+                minWidth: 100,
+                background: "#0f766e",
+                border: "none",
+                color: "#ffffff"
+              }}
             >
               {isAddingAmountChange ? "Agregando..." : "Agregar"}
             </button>
