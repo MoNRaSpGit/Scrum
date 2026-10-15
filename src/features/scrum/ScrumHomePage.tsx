@@ -46,7 +46,10 @@ export function ScrumHomePage() {
   const [now, setNow] = useState(() => Date.now());
   const [viewMode, setViewMode] = useState<ViewMode>("board");
   const [clients, setClients] = useState<ClientBilling[]>(INITIAL_CLIENTS);
-  const [expandedClientId, setExpandedClientId] = useState<number | null>(INITIAL_CLIENTS[0]?.id ?? null);
+  // Todos los clientes arrancan cerrados (15/10/2026, pedido explicito:
+  // "que no me muestre los datos si yo no le hago click"). Antes se abria
+  // solo el primero al entrar.
+  const [expandedClientId, setExpandedClientId] = useState<number | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientAmount, setClientAmount] = useState("");
   const [clientDebtAmount, setClientDebtAmount] = useState("");
@@ -97,7 +100,6 @@ export function ScrumHomePage() {
         );
         setTasks(response.tasks || []);
         setClients(response.clients || []);
-        setExpandedClientId((response.clients || [])[0]?.id ?? null);
         setDebts(response.debts || []);
         setFeedbackMessage(null);
       } catch {
