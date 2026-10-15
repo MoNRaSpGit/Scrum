@@ -87,6 +87,17 @@ export function getMontevideoDateKey(dateValue: number) {
   }).format(new Date(dateValue));
 }
 
+// Fecha por defecto del "Proximo pago" al crear un cliente (15/10/2026,
+// pedido explicito): hoy + 1 mes, como si ya hubiera pagado el primero
+// ("lo creo el 15/10/26 y sale 15/11/26"). Si el dia no existe en el mes
+// siguiente queda en el ultimo (31/01 -> 28/02, no 03/03).
+export function getDefaultNextPaymentAt(now: number = Date.now()) {
+  const [year, month, day] = getMontevideoDateKey(now).split("-").map(Number);
+  const lastDayOfNextMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const next = new Date(Date.UTC(year, month, Math.min(day, lastDayOfNextMonth)));
+  return next.toISOString().slice(0, 10);
+}
+
 export function getMontevideoDayStart(dayKey: string) {
   return new Date(`${dayKey}T00:00:00-03:00`).getTime();
 }

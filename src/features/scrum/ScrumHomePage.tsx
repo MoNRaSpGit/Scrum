@@ -27,6 +27,7 @@ import {
   buildCompletedHistory,
   formatHistoryDay,
   formatTrackedTime,
+  getDefaultNextPaymentAt,
   getInitialBoardTimerState,
   getMontevideoDateKey,
   getTaskPriority,
@@ -50,7 +51,7 @@ export function ScrumHomePage() {
   const [clientAmount, setClientAmount] = useState("");
   const [clientDebtAmount, setClientDebtAmount] = useState("");
   const [clientFrequency, setClientFrequency] = useState<"monthly" | "semiannual">("monthly");
-  const [clientNextPaymentAt, setClientNextPaymentAt] = useState("2026-08-05");
+  const [clientNextPaymentAt, setClientNextPaymentAt] = useState(() => getDefaultNextPaymentAt());
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -371,7 +372,7 @@ export function ScrumHomePage() {
       setClientAmount("");
       setClientDebtAmount("");
       setClientFrequency("monthly");
-      setClientNextPaymentAt("2026-08-05");
+      setClientNextPaymentAt(getDefaultNextPaymentAt());
       toast.success("Cliente creado.");
     } catch {
       toast.error("No se pudo crear el cliente.");
