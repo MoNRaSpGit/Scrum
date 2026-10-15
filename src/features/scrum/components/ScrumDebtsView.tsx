@@ -34,6 +34,7 @@ import {
   secondaryButtonStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel } from "../scrum.utils";
+import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumDebtsViewProps = {
   debtName: string;
@@ -73,6 +74,7 @@ function DebtCard({
   const [chargeAmount, setChargeAmount] = useState("");
   const [chargeDetail, setChargeDetail] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const alertState = getClientAlertState(debt.dueDate, now);
   const alertStyle = CLIENT_ALERT_STYLES[alertState];
@@ -235,15 +237,23 @@ function DebtCard({
         <div style={clientActionsStyle}>
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm(`Eliminar la deuda "${debt.name}"? Se borra tambien su historial de cargos y pagos.`)) {
-                onDeleteDebt(debt.id);
-              }
-            }}
+            onClick={() => setConfirmingDelete(true)}
             style={deleteButtonStyle}
           >
             Eliminar deuda
           </button>
+          {confirmingDelete ? (
+            <ScrumConfirmModal
+              title="¿Seguro que querés eliminar esta deuda?"
+              message={`"${debt.name}" se borra junto con todo su historial de cargos y pagos. No se puede deshacer.`}
+              confirmLabel="Sí, eliminar"
+              onCancel={() => setConfirmingDelete(false)}
+              onConfirm={() => {
+                setConfirmingDelete(false);
+                onDeleteDebt(debt.id);
+              }}
+            />
+          ) : null}
         </div>
       </div>
       ) : null}

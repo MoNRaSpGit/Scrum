@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { DIFFICULTY_LABELS, type TaskDifficulty, type TaskDurationUnit } from "../scrum.types";
 import {
   compactInputStyle,
@@ -11,12 +11,15 @@ import {
   primaryButtonStyle,
   taskDurationEditorStyle
 } from "../scrum.styles";
+import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumDurationModalProps = {
   editingDifficulty: TaskDifficulty;
   editingDurationUnit: TaskDurationUnit;
   editingDurationValue: string;
   editingTaskId: number | null;
+  // Nombre de la tarea, para el cartel de confirmacion al eliminar.
+  editingTaskTitle?: string;
   onClose: () => void;
   onDelete: (taskId: number) => void;
   onSave: (taskId: number) => void;
@@ -30,6 +33,7 @@ export function ScrumDurationModal({
   editingDurationUnit,
   editingDurationValue,
   editingTaskId,
+  editingTaskTitle,
   onClose,
   onDelete,
   onSave,
@@ -37,6 +41,8 @@ export function ScrumDurationModal({
   setEditingDurationUnit,
   setEditingDurationValue
 }: ScrumDurationModalProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   if (!editingTaskId) {
     return null;
   }
@@ -78,11 +84,7 @@ export function ScrumDurationModal({
         <div style={{ display: "flex", gap: 10, justifyContent: "space-between", flexWrap: "wrap" }}>
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm("Eliminar esta tarea?")) {
-                onDelete(editingTaskId);
-              }
-            }}
+            onClick={() => setConfirmingDelete(true)}
             style={deleteButtonStyle}
           >
             Eliminar tarea
@@ -92,6 +94,19 @@ export function ScrumDurationModal({
           </button>
         </div>
       </div>
+
+      {confirmingDelete ? (
+        <ScrumConfirmModal
+          title="¿Seguro que querés eliminar esta tarea?"
+          message={`${editingTaskTitle ? `"${editingTaskTitle}" ` : "La tarea "}se borra del tablero. No se puede deshacer.`}
+          confirmLabel="Sí, eliminar"
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={() => {
+            setConfirmingDelete(false);
+            onDelete(editingTaskId);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

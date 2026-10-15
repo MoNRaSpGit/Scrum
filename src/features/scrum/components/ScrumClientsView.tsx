@@ -33,6 +33,7 @@ import {
   secondaryButtonStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel } from "../scrum.utils";
+import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumClientsViewProps = {
   clientAmount: string;
@@ -148,6 +149,8 @@ export function ScrumClientsView({
   setClientNextPaymentAt,
   setExpandedClientId
 }: ScrumClientsViewProps) {
+  // Cliente que se pidio eliminar y espera la confirmacion.
+  const [clientToDelete, setClientToDelete] = useState<ClientBilling | null>(null);
   return (
     <section style={historyPanelStyle}>
       <header style={historyHeaderStyle}>
@@ -283,15 +286,23 @@ export function ScrumClientsView({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`Eliminar a "${client.name}"? Se borra tambien su historial de pagos y de montos.`)) {
-                          onDeleteClient(client.id);
-                        }
-                      }}
+                      onClick={() => setClientToDelete(client)}
                       style={deleteButtonStyle}
                     >
                       Eliminar cliente
                     </button>
+                    {clientToDelete?.id === client.id ? (
+                      <ScrumConfirmModal
+                        title="¿Seguro que querés eliminar este cliente?"
+                        message={`"${client.name}" se borra junto con todo su historial de pagos y de montos. No se puede deshacer.`}
+                        confirmLabel="Sí, eliminar"
+                        onCancel={() => setClientToDelete(null)}
+                        onConfirm={() => {
+                          setClientToDelete(null);
+                          onDeleteClient(client.id);
+                        }}
+                      />
+                    ) : null}
                   </div>
                 </div>
               ) : null}

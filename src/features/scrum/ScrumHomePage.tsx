@@ -241,6 +241,9 @@ export function ScrumHomePage() {
     try {
       await requestJson<{ ok: boolean }>(`/scrum/tasks/${taskId}`, { method: "DELETE" });
       setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
+      // Bug 15/10/2026: el modal de "Editar plazo" de la tarea borrada
+      // quedaba abierto y habia que tocar Cerrar a mano.
+      setEditingTaskId((currentId) => (currentId === taskId ? null : currentId));
       toast.success("Tarea eliminada.");
     } catch {
       toast.error("No se pudo borrar la tarea.");
@@ -722,6 +725,7 @@ export function ScrumHomePage() {
         editingDurationValue={editingDurationValue}
         editingDifficulty={editingDifficulty}
         editingTaskId={editingTaskId}
+        editingTaskTitle={tasks.find((task) => task.id === editingTaskId)?.title}
         onClose={() => setEditingTaskId(null)}
         onDelete={handleDeleteTask}
         onSave={handleUpdateTaskDuration}
