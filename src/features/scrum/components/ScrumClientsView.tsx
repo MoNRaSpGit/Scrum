@@ -286,7 +286,13 @@ export function ScrumClientsView({
           return (
             <article key={client.id} style={clientCardStyle}>
               <button type="button" onClick={() => setExpandedClientId(expanded ? null : client.id)} style={clientRowButtonStyle}>
-                <strong style={{ fontSize: 15, fontWeight: 700 }}>{client.name}</strong>
+                <div style={{ display: "grid", gap: 4 }}>
+                  <strong style={{ fontSize: 15, fontWeight: 700 }}>{client.name}</strong>
+                  {/* Dias hasta el proximo pago, visible sin desplegar (pedido explicito, 22/10/2026). */}
+                  <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
+                    {getClientRelativeLabel(client.nextPaymentAt, now)}
+                  </span>
+                </div>
                 <span
                   style={{
                     ...clientStatusBadgeStyle,
