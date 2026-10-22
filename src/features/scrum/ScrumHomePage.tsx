@@ -4,29 +4,22 @@ import { ScrumBoardView } from "./components/ScrumBoardView";
 import { ScrumClientEditModal } from "./components/ScrumClientEditModal";
 import { ScrumChartsView } from "./components/ScrumChartsView";
 import { ScrumClientsView } from "./components/ScrumClientsView";
-import { ScrumDebtsView } from "./components/ScrumDebtsView";
 import { ScrumDurationModal } from "./components/ScrumDurationModal";
 import { ScrumHeader } from "./components/ScrumHeader";
-import { ScrumHistoryView } from "./components/ScrumHistoryView";
 import { ScrumTimerEditModal } from "./components/ScrumTimerEditModal";
 import { requestJson } from "./scrum.api";
 import { loadingPanelStyle, pageStyle, emptyStateStyle } from "./scrum.styles";
 import {
   INITIAL_CLIENTS,
-  INITIAL_DEBTS,
   INITIAL_TASKS,
   type BillingFrequency,
-  type BoardTimerHistoryDisplayEntry,
   type ClientBilling,
-  type ScrumDebt,
   type ScrumTask,
   type TaskDifficulty,
   type TaskDurationUnit,
   type ViewMode
 } from "./scrum.types";
 import {
-  buildCompletedHistory,
-  formatHistoryDay,
   formatTrackedTime,
   getDefaultNextPaymentAt,
   getInitialBoardTimerState,
@@ -74,10 +67,6 @@ export function ScrumHomePage() {
   const [editingClientAmountDeltaDescription, setEditingClientAmountDeltaDescription] = useState("");
   const [isSavingClientEdit, setIsSavingClientEdit] = useState(false);
   const [isAddingAmountChange, setIsAddingAmountChange] = useState(false);
-  const [debts, setDebts] = useState<ScrumDebt[]>(INITIAL_DEBTS);
-  const [debtName, setDebtName] = useState("");
-  const [debtAmount, setDebtAmount] = useState("");
-  const [debtDueDate, setDebtDueDate] = useState("");
 
   const currentDayKey = getMontevideoDateKey(now);
   const boardElapsedSeconds =
@@ -96,12 +85,11 @@ export function ScrumHomePage() {
     async function loadWorkspace() {
       try {
         setIsLoadingWorkspace(true);
-        const response = await requestJson<{ ok: boolean; tasks: ScrumTask[]; clients: ClientBilling[]; debts: ScrumDebt[] }>(
-          "/scrum/workspace"
-        );
+        // Deudas (/scrum/workspace sigue devolviendolas) ya no se usan en
+        // la pantalla -- se saco esa pestaña del rediseño (22/10/2026).
+        const response = await requestJson<{ ok: boolean; tasks: ScrumTask[]; clients: ClientBilling[] }>("/scrum/workspace");
         setTasks(response.tasks || []);
         setClients(response.clients || []);
-        setDebts(response.debts || []);
         setFeedbackMessage(null);
       } catch {
         setFeedbackMessage("No se pudo cargar la informacion de Scrum.");
@@ -155,17 +143,6 @@ export function ScrumHomePage() {
       done: tasks.filter((task) => task.status === "done").sort((left, right) => getTaskPriority(left) - getTaskPriority(right))
     }),
     [tasks]
-  );
-
-  const completedHistory = useMemo(() => buildCompletedHistory(tasks), [tasks]);
-
-  const boardTimerHistory = useMemo<BoardTimerHistoryDisplayEntry[]>(
-    () =>
-      boardTimerState.history.map((entry) => ({
-        ...entry,
-        dateLabel: formatHistoryDay(entry.dayKey)
-      })),
-    [boardTimerState.history]
   );
 
   async function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
@@ -385,113 +362,6 @@ export function ScrumHomePage() {
     }
   }
 
-  async function handleCreateDebt(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedName = debtName.trim();
-    const parsedAmount = Number(debtAmount);
-
-    if (!normalizedName) {
-      toast.error("Ponele un nombre a la deuda.");
-      return;
-    }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      toast.error("Ingresa un monto valido mayor a 0.");
-      return;
-    }
-
-    try {
-      const response = await requestJson<{ ok: boolean; item: ScrumDebt }>("/scrum/debts", {
-        method: "POST",
-        body: JSON.stringify({
-          name: normalizedName,
-          amount: Math.round(parsedAmount),
-          dueDate: debtDueDate || undefined
-        })
-      });
-
-      setDebts((currentDebts) => [response.item, ...currentDebts]);
-      setDebtName("");
-      setDebtAmount("");
-      setDebtDueDate("");
-      toast.success("Deuda creada.");
-    } catch {
-      toast.error("No se pudo crear la deuda.");
-    }
-  }
-
-  async function handleDeleteDebt(debtId: number) {
-    try {
-      await requestJson<{ ok: boolean }>(`/scrum/debts/${debtId}`, { method: "DELETE" });
-      setDebts((currentDebts) => currentDebts.filter((debt) => debt.id !== debtId));
-      toast.success("Deuda eliminada.");
-    } catch {
-      toast.error("No se pudo borrar la deuda.");
-    }
-  }
-
-  async function handleAddDebtCharge(debtId: number, amountInput: string, detail: string) {
-    const parsedAmount = Number(amountInput);
-    const normalizedDetail = detail.trim();
-
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      toast.error("Ingresa un monto valido mayor a 0.");
-      return;
-    }
-    if (!normalizedDetail) {
-      toast.error("Agrega un detalle para el cargo.");
-      return;
-    }
-
-    try {
-      const response = await requestJson<{ ok: boolean; item: ScrumDebt }>(`/scrum/debts/${debtId}/charges`, {
-        method: "POST",
-        body: JSON.stringify({ amount: parsedAmount, detail: normalizedDetail })
-      });
-      setDebts((currentDebts) => currentDebts.map((debt) => (debt.id === debtId ? response.item : debt)));
-      toast.success("Cargo agregado.");
-    } catch {
-      toast.error("No se pudo agregar el cargo.");
-    }
-  }
-
-  async function handleAddDebtPayment(debtId: number, amountInput: string) {
-    const parsedAmount = Number(amountInput);
-
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      toast.error("Ingresa un monto valido mayor a 0.");
-      return;
-    }
-
-    try {
-      const response = await requestJson<{ ok: boolean; item: ScrumDebt }>(`/scrum/debts/${debtId}/payments`, {
-        method: "POST",
-        body: JSON.stringify({ amount: parsedAmount })
-      });
-      setDebts((currentDebts) => currentDebts.map((debt) => (debt.id === debtId ? response.item : debt)));
-      toast.success("Pago registrado.");
-    } catch {
-      toast.error("No se pudo registrar el pago.");
-    }
-  }
-
-  async function handleUpdateDebtDueDate(debtId: number, dueDate: string) {
-    if (!dueDate) {
-      toast.error("Elegi una fecha valida.");
-      return;
-    }
-
-    try {
-      const response = await requestJson<{ ok: boolean; item: ScrumDebt }>(`/scrum/debts/${debtId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ dueDate })
-      });
-      setDebts((currentDebts) => currentDebts.map((debt) => (debt.id === debtId ? response.item : debt)));
-      toast.success("Fecha de vencimiento actualizada.");
-    } catch {
-      toast.error("No se pudo actualizar la fecha.");
-    }
-  }
-
   function handleBoardTimerToggle() {
     if (boardTimerState.timerStartedAt) {
       const totalWorkedSeconds = boardTimerState.trackedSeconds + Math.max(0, Math.floor((Date.now() - boardTimerState.timerStartedAt) / 1000));
@@ -675,10 +545,6 @@ export function ScrumHomePage() {
         />
       ) : null}
 
-      {!isLoadingWorkspace && viewMode === "history" ? (
-        <ScrumHistoryView boardElapsedSeconds={boardElapsedSeconds} boardTimerHistory={boardTimerHistory} completedHistory={completedHistory} />
-      ) : null}
-
       {!isLoadingWorkspace && viewMode === "clients" ? (
         <ScrumClientsView
           clientAmount={clientAmount}
@@ -700,24 +566,6 @@ export function ScrumHomePage() {
           setClientName={setClientName}
           setClientNextPaymentAt={setClientNextPaymentAt}
           setExpandedClientId={setExpandedClientId}
-        />
-      ) : null}
-
-      {!isLoadingWorkspace && viewMode === "debts" ? (
-        <ScrumDebtsView
-          debtName={debtName}
-          debtAmount={debtAmount}
-          debtDueDate={debtDueDate}
-          debts={debts}
-          now={now}
-          onCreateDebt={handleCreateDebt}
-          onDeleteDebt={handleDeleteDebt}
-          onAddDebtCharge={handleAddDebtCharge}
-          onAddDebtPayment={handleAddDebtPayment}
-          onUpdateDebtDueDate={handleUpdateDebtDueDate}
-          setDebtName={setDebtName}
-          setDebtAmount={setDebtAmount}
-          setDebtDueDate={setDebtDueDate}
         />
       ) : null}
 

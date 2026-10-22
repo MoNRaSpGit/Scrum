@@ -1,7 +1,10 @@
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskDifficulty = "green" | "yellow" | "red" | "blue";
 export type TaskDurationUnit = "days" | "weeks" | "months";
-export type ViewMode = "board" | "history" | "clients" | "debts" | "charts";
+// Rediseno 22/10/2026 (pedido explicito): se dejan de usar "historial" y
+// "deudas" en la navegacion -- el codigo de esas vistas queda intacto
+// (ScrumHistoryView.tsx, ScrumDebtsView.tsx) por si se reactivan.
+export type ViewMode = "board" | "clients" | "charts";
 export type BillingFrequency = "monthly" | "semiannual";
 export type ClientAlertState = "white" | "green" | "yellow" | "red";
 
@@ -115,24 +118,24 @@ export const DIFFICULTY_LABELS: Record<TaskDifficulty, string> = {
 
 export const DIFFICULTY_STYLES: Record<TaskDifficulty, { accent: string; background: string; text: string }> = {
   green: {
-    accent: "#2f9e44",
-    background: "#eefaf1",
-    text: "#1f6f31"
+    accent: "#16a34a",
+    background: "#eafaf0",
+    text: "#146c37"
   },
   yellow: {
-    accent: "#d4a017",
-    background: "#fff8e6",
-    text: "#8f6800"
+    accent: "#d97706",
+    background: "#fef6e7",
+    text: "#92600a"
   },
   red: {
-    accent: "#d64545",
-    background: "#fff0f0",
-    text: "#9e2b2b"
+    accent: "#dc2626",
+    background: "#fdecec",
+    text: "#991b1b"
   },
   blue: {
-    accent: "#2b6fe8",
-    background: "#eef4ff",
-    text: "#214fa8"
+    accent: "#4f46e5",
+    background: "#eef0ff",
+    text: "#4338ca"
   }
 };
 
@@ -140,26 +143,26 @@ export const CLIENT_ALERT_STYLES: Record<ClientAlertState, { background: string;
   {
     white: {
       background: "#ffffff",
-      color: "#5f6b80",
-      border: "#d7dfeb",
+      color: "#5c6270",
+      border: "#e5e7ef",
       label: "Normal"
     },
     green: {
-      background: "#eefaf1",
-      color: "#1f6f31",
-      border: "#8ed3a0",
+      background: "#eafaf0",
+      color: "#146c37",
+      border: "#bfe8cf",
       label: "En mes"
     },
     yellow: {
-      background: "#fff8e6",
-      color: "#8f6800",
-      border: "#f0cf71",
+      background: "#fef6e7",
+      color: "#92600a",
+      border: "#f6dba8",
       label: "En semana"
     },
     red: {
-      background: "#fff0f0",
-      color: "#9e2b2b",
-      border: "#efadad",
+      background: "#fdecec",
+      color: "#991b1b",
+      border: "#f6c1c1",
       label: "Vencido"
     }
   };

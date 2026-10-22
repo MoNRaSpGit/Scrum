@@ -6,13 +6,13 @@ import {
   boardTimerPanelStyle,
   boardTimerValueStyle,
   boardTimerWrapStyle,
-  headerTabsAlignStyle,
+  brandMarkStyle,
+  ghostButtonStyle,
+  headerTopRowStyle,
   heroStyle,
   noticeStyle,
-  secondaryButtonStyle,
   tabButtonStyle,
   tabsWrapStyle,
-  titleRowStyle,
   titleStyle
 } from "../scrum.styles";
 
@@ -26,6 +26,15 @@ type ScrumHeaderProps = {
   onChangeViewMode: (mode: ViewMode) => void;
 };
 
+const TABS: { key: ViewMode; label: string }[] = [
+  { key: "board", label: "Tablero" },
+  { key: "clients", label: "Clientes" },
+  { key: "charts", label: "Gráficos" }
+];
+
+// Rediseno 22/10/2026 (pedido explicito): "quiero que lo rediseñes
+// totalmente... tablero, clientes y graficos" -- se sacan Historial y
+// Deudas de la barra (quedan sin uso real, el codigo sigue intacto).
 export function ScrumHeader({
   boardTimerRunning,
   boardTimerValue,
@@ -37,45 +46,38 @@ export function ScrumHeader({
 }: ScrumHeaderProps) {
   return (
     <section style={heroStyle}>
-      <div style={{ display: "grid", gap: 10 }}>
-        <div style={titleRowStyle}>
+      <div style={headerTopRowStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={brandMarkStyle}>S</span>
           <h1 style={titleStyle}>Scrum</h1>
         </div>
+
+        <nav style={tabsWrapStyle}>
+          {TABS.map((tab) => (
+            <button key={tab.key} type="button" onClick={() => onChangeViewMode(tab.key)} style={tabButtonStyle(viewMode === tab.key)}>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {viewMode === "board" ? (
         <div style={boardTimerBlockStyle}>
           <div style={boardTimerWrapStyle}>
             <button type="button" onClick={onToggleBoardTimer} style={boardTimerButtonStyle(boardTimerRunning)}>
-              {boardTimerRunning ? "Detener cronometro" : "Iniciar cronometro"}
+              {boardTimerRunning ? "Detener cronómetro" : "Iniciar cronómetro"}
             </button>
-            <button type="button" onClick={onEditBoardTimer} style={secondaryButtonStyle}>
+            <button type="button" onClick={onEditBoardTimer} style={ghostButtonStyle}>
               Editar
             </button>
+            <div style={boardTimerPanelStyle}>
+              <span style={boardTimerCaptionStyle}>{boardTimerRunning ? "En vivo" : "Tiempo acumulado hoy"}</span>
+              <span style={boardTimerValueStyle}>{boardTimerValue}</span>
+            </div>
           </div>
-          <div style={boardTimerPanelStyle}>
-            <span style={boardTimerCaptionStyle}>{boardTimerRunning ? "En vivo" : "Tiempo acumulado hoy"}</span>
-            <span style={boardTimerValueStyle}>{boardTimerValue}</span>
-          </div>
+          {feedbackMessage ? <p style={noticeStyle}>{feedbackMessage}</p> : null}
         </div>
-        {feedbackMessage ? <p style={noticeStyle}>{feedbackMessage}</p> : null}
-      </div>
-      <div style={headerTabsAlignStyle}>
-        <section style={tabsWrapStyle}>
-          <button type="button" onClick={() => onChangeViewMode("board")} style={tabButtonStyle(viewMode === "board")}>
-            Tablero
-          </button>
-          <button type="button" onClick={() => onChangeViewMode("history")} style={tabButtonStyle(viewMode === "history")}>
-            Historial
-          </button>
-          <button type="button" onClick={() => onChangeViewMode("clients")} style={tabButtonStyle(viewMode === "clients")}>
-            Clientes
-          </button>
-          <button type="button" onClick={() => onChangeViewMode("debts")} style={tabButtonStyle(viewMode === "debts")}>
-            Deudas
-          </button>
-          <button type="button" onClick={() => onChangeViewMode("charts")} style={tabButtonStyle(viewMode === "charts")}>
-            Gráficos
-          </button>
-        </section>
-      </div>
+      ) : null}
     </section>
   );
 }

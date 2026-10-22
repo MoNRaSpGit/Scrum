@@ -11,6 +11,7 @@ import {
   clientPrimaryValueStyle,
   clientRowButtonStyle,
   clientStatusBadgeStyle,
+  collapsibleFormHeaderStyle,
   columnCaptionStyle,
   debtAmountInputStyle,
   debtHistoryListStyle,
@@ -20,9 +21,11 @@ import {
   debtPaymentFormStyle,
   debtSummaryRowStyle,
   deleteButtonStyle,
+  difficultyDotStyle,
   emptyStateStyle,
   fieldGroupStyle,
   formActionsStyle,
+  ghostButtonStyle,
   historyHeaderStyle,
   historyPanelStyle,
   inputStyle,
@@ -154,11 +157,18 @@ export function ScrumClientsView({
 }: ScrumClientsViewProps) {
   // Cliente que se pidio eliminar y espera la confirmacion.
   const [clientToDelete, setClientToDelete] = useState<ClientBilling | null>(null);
+  // Formulario colapsable (rediseño 22/10/2026), mismo criterio que el tablero.
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Ganancia mensual (pedido explicito, 22/10/2026): suma de todos los
   // clientes normalizados a "por mes", para que un cliente que paga cada
   // 6 meses cuente como un doceavo... un sexto de su monto cada mes.
   const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyAmount(client.amount, client.frequency), 0);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    onCreateClient(event);
+    setIsFormOpen(false);
+  }
 
   return (
     <section style={historyPanelStyle}>
@@ -174,80 +184,96 @@ export function ScrumClientsView({
       </header>
 
       <section style={panelStyle}>
-        <form onSubmit={onCreateClient} style={clientFormGridStyle}>
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle} htmlFor="client-name">
-              Nombre
-            </label>
-            <input id="client-name" value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Nombre del cliente" style={inputStyle} />
-          </div>
+        <div style={collapsibleFormHeaderStyle}>
+          <strong style={{ fontSize: 15 }}>Nuevo cliente</strong>
+          <button type="button" onClick={() => setIsFormOpen((current) => !current)} style={isFormOpen ? ghostButtonStyle : secondaryButtonStyle}>
+            {isFormOpen ? "Cancelar" : "+ Agregar"}
+          </button>
+        </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle} htmlFor="client-amount">
-              Monto
-            </label>
-            <input
-              id="client-amount"
-              type="number"
-              min="1"
-              step="1"
-              value={clientAmount}
-              onChange={(event) => setClientAmount(event.target.value)}
-              placeholder="4500"
-              style={inputStyle}
-            />
-          </div>
+        {isFormOpen ? (
+          <form onSubmit={handleSubmit} style={clientFormGridStyle}>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle} htmlFor="client-name">
+                Nombre
+              </label>
+              <input
+                id="client-name"
+                value={clientName}
+                onChange={(event) => setClientName(event.target.value)}
+                placeholder="Nombre del cliente"
+                style={inputStyle}
+                autoFocus
+              />
+            </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle} htmlFor="client-frequency">
-              Frecuencia
-            </label>
-            <select
-              id="client-frequency"
-              value={clientFrequency}
-              onChange={(event) => setClientFrequency(event.target.value as BillingFrequency)}
-              style={inputStyle}
-            >
-              <option value="monthly">Mensual</option>
-              <option value="semiannual">Cada 6 meses</option>
-            </select>
-          </div>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle} htmlFor="client-amount">
+                Monto
+              </label>
+              <input
+                id="client-amount"
+                type="number"
+                min="1"
+                step="1"
+                value={clientAmount}
+                onChange={(event) => setClientAmount(event.target.value)}
+                placeholder="4500"
+                style={inputStyle}
+              />
+            </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle} htmlFor="client-next-payment">
-              Proximo pago
-            </label>
-            <input
-              id="client-next-payment"
-              type="date"
-              value={clientNextPaymentAt}
-              onChange={(event) => setClientNextPaymentAt(event.target.value)}
-              style={inputStyle}
-            />
-          </div>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle} htmlFor="client-frequency">
+                Frecuencia
+              </label>
+              <select
+                id="client-frequency"
+                value={clientFrequency}
+                onChange={(event) => setClientFrequency(event.target.value as BillingFrequency)}
+                style={inputStyle}
+              >
+                <option value="monthly">Mensual</option>
+                <option value="semiannual">Cada 6 meses</option>
+              </select>
+            </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle} htmlFor="client-debt-amount">
-              Monto adeudado (opcional)
-            </label>
-            <input
-              id="client-debt-amount"
-              type="number"
-              min="0"
-              step="1"
-              value={clientDebtAmount}
-              onChange={(event) => setClientDebtAmount(event.target.value)}
-              placeholder="Ej: 4000"
-              style={inputStyle}
-            />
-          </div>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle} htmlFor="client-next-payment">
+                Proximo pago
+              </label>
+              <input
+                id="client-next-payment"
+                type="date"
+                value={clientNextPaymentAt}
+                onChange={(event) => setClientNextPaymentAt(event.target.value)}
+                style={inputStyle}
+              />
+            </div>
 
-          <div style={formActionsStyle}>
-            <button type="submit" style={primaryButtonStyle}>
-              Crear cliente
-            </button>
-          </div>
-        </form>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle} htmlFor="client-debt-amount">
+                Monto adeudado (opcional)
+              </label>
+              <input
+                id="client-debt-amount"
+                type="number"
+                min="0"
+                step="1"
+                value={clientDebtAmount}
+                onChange={(event) => setClientDebtAmount(event.target.value)}
+                placeholder="Ej: 4000"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={formActionsStyle}>
+              <button type="submit" style={primaryButtonStyle}>
+                Crear cliente
+              </button>
+            </div>
+          </form>
+        ) : null}
       </section>
 
       <div style={clientGridStyle}>
@@ -261,15 +287,15 @@ export function ScrumClientsView({
           return (
             <article key={client.id} style={clientCardStyle}>
               <button type="button" onClick={() => setExpandedClientId(expanded ? null : client.id)} style={clientRowButtonStyle}>
-                <strong style={{ fontSize: 16 }}>{client.name}</strong>
+                <strong style={{ fontSize: 15, fontWeight: 700 }}>{client.name}</strong>
                 <span
                   style={{
                     ...clientStatusBadgeStyle,
                     background: alertStyle.background,
-                    color: alertStyle.color,
-                    border: `1px solid ${alertStyle.border}`
+                    color: alertStyle.color
                   }}
                 >
+                  <span style={{ ...difficultyDotStyle(alertStyle.color), marginRight: 6 }} />
                   {alertStyle.label}
                 </span>
               </button>

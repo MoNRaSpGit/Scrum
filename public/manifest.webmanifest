@@ -2,12 +2,12 @@
   "id": "/Scrum/",
   "name": "Scrum",
   "short_name": "Scrum",
-  "description": "Tablero Scrum con tareas, historial y cronometro diario.",
+  "description": "Tablero Scrum con tareas, clientes y gráficos.",
   "start_url": "/Scrum/",
   "scope": "/Scrum/",
   "display": "standalone",
-  "background_color": "#f3f6fb",
-  "theme_color": "#14213d",
+  "background_color": "#f5f6fb",
+  "theme_color": "#4f46e5",
   "icons": [
     {
       "src": "/Scrum/icons/scrum-icon.svg",
