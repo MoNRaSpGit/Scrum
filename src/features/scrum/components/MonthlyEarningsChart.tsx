@@ -86,7 +86,6 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
   }
 
   const hovered = hoverIndex !== null ? points[hoverIndex] : null;
-  const lastPoint = points[points.length - 1];
 
   return (
     <section style={earningsChartCardStyle}>
@@ -111,19 +110,30 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
         <path d={areaPath} fill={SERIES_COLOR} opacity={0.1} stroke="none" />
         <path d={linePath} fill="none" stroke={SERIES_COLOR} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
 
-        {points.map((point, index) => (
-          <g key={index}>
-            <circle cx={point.x} cy={point.y} r={4} fill={SERIES_COLOR} stroke="#ffffff" strokeWidth={2} />
-            <text x={point.x} y={CHART_HEIGHT - 6} textAnchor="middle" fontSize={11} fill={MUTED_TEXT}>
-              {point.month}
-            </text>
-          </g>
-        ))}
-
-        {/* Valor directo solo en el ultimo punto (el real de hoy) -- selectivo, no todos. */}
-        <text x={lastPoint.x} y={lastPoint.y - 12} textAnchor="middle" fontSize={12} fontWeight={800} fill="#162033">
-          {formatCurrency(lastPoint.value)}
-        </text>
+        {points.map((point, index) => {
+          // El primero va alineado a la derecha (en vez de centrado) para
+          // que no choque contra los numeros del eje Y, pedido explicito
+          // de mostrar el valor en todos los puntos (22/10/2026).
+          const isFirst = index === 0;
+          return (
+            <g key={index}>
+              <circle cx={point.x} cy={point.y} r={4} fill={SERIES_COLOR} stroke="#ffffff" strokeWidth={2} />
+              <text x={point.x} y={CHART_HEIGHT - 6} textAnchor="middle" fontSize={11} fill={MUTED_TEXT}>
+                {point.month}
+              </text>
+              <text
+                x={isFirst ? point.x + 4 : point.x}
+                y={point.y - 12}
+                textAnchor={isFirst ? "start" : "middle"}
+                fontSize={12}
+                fontWeight={800}
+                fill="#162033"
+              >
+                {formatCurrency(point.value)}
+              </text>
+            </g>
+          );
+        })}
 
         {hovered ? (
           <line
