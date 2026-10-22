@@ -10,7 +10,6 @@ import {
   counterStyle,
   deleteButtonStyle,
   difficultyBadgeBaseStyle,
-  difficultyDotStyle,
   durationInlineStyle,
   emptyStateStyle,
   fieldGroupStyle,
@@ -108,7 +107,7 @@ export function ScrumBoardView({
               <label style={labelStyle} htmlFor="task-title">
                 Nombre
               </label>
-              <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Nueva tarea" style={inputStyle} autoFocus />
+              <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Nueva tarea" style={inputStyle} />
             </div>
 
             <div style={fieldGroupStyle}>
@@ -197,13 +196,17 @@ export function ScrumBoardView({
                 const expanded = expandedTaskId === task.id;
 
                 return (
-                  <article key={task.id} style={taskCardBaseStyle}>
+                  <article
+                    key={task.id}
+                    style={{
+                      ...taskCardBaseStyle,
+                      borderLeft: `5px solid ${difficultyStyle.accent}`,
+                      background: difficultyStyle.background
+                    }}
+                  >
                     <button type="button" onClick={() => setExpandedTaskId(expanded ? null : task.id)} style={taskRowButtonStyle}>
                       <div style={{ display: "grid", gap: 7 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                          <span style={difficultyDotStyle(difficultyStyle.accent)} />
-                          <strong style={taskTitleStyle}>{task.title}</strong>
-                        </div>
+                        <strong style={taskTitleStyle}>{task.title}</strong>
                         <span style={metaChipStyle}>{formatTaskRemaining(task, now)}</span>
                       </div>
                     </button>

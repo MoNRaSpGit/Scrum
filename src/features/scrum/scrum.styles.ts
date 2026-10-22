@@ -171,7 +171,9 @@ export const inputStyle: CSSProperties = {
   border: `1px solid ${COLOR.borderStrong}`,
   background: COLOR.surface,
   color: COLOR.textPrimary,
-  fontSize: 14,
+  // 16px, no 14: por debajo de eso Safari/Chrome en celular hacen zoom
+  // automatico al enfocar el campo (bug encontrado 22/10/2026).
+  fontSize: 16,
   fontFamily: FONT_FAMILY
 };
 export const formActionsStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", alignSelf: "end" };
@@ -310,7 +312,7 @@ export const historyTaskRowStyle: CSSProperties = {
 };
 
 // ---------------- Clientes ----------------
-export const clientGridStyle: CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" };
+export const clientGridStyle: CSSProperties = { display: "grid", gap: 10 };
 export const clientCardStyle: CSSProperties = {
   border: `1px solid ${COLOR.border}`,
   borderRadius: RADIUS.md,

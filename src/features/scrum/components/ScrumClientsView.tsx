@@ -203,7 +203,6 @@ export function ScrumClientsView({
                 onChange={(event) => setClientName(event.target.value)}
                 placeholder="Nombre del cliente"
                 style={inputStyle}
-                autoFocus
               />
             </div>
 
