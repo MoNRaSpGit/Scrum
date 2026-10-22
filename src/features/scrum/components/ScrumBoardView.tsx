@@ -200,7 +200,7 @@ export function ScrumBoardView({
                     key={task.id}
                     style={{
                       ...taskCardBaseStyle,
-                      borderLeft: `5px solid ${difficultyStyle.accent}`,
+                      border: `1px solid ${difficultyStyle.accent}33`,
                       background: difficultyStyle.background
                     }}
                   >

@@ -117,24 +117,27 @@ export const DIFFICULTY_LABELS: Record<TaskDifficulty, string> = {
 };
 
 export const DIFFICULTY_STYLES: Record<TaskDifficulty, { accent: string; background: string; text: string }> = {
+  // Fondo mas intenso (pedido explicito, 22/10/2026: "ponele el color un
+  // poco mas intenso pero sin ese borde lateral llamativo") -- todo el
+  // rectangulo de la tarjeta lleva el color, sin la barra lateral de antes.
   green: {
     accent: "#16a34a",
-    background: "#eafaf0",
+    background: "#c9f2dc",
     text: "#146c37"
   },
   yellow: {
     accent: "#d97706",
-    background: "#fef6e7",
+    background: "#fbe3ab",
     text: "#92600a"
   },
   red: {
     accent: "#dc2626",
-    background: "#fdecec",
+    background: "#fbd0d0",
     text: "#991b1b"
   },
   blue: {
     accent: "#4f46e5",
-    background: "#eef0ff",
+    background: "#d6d9fb",
     text: "#4338ca"
   }
 };
