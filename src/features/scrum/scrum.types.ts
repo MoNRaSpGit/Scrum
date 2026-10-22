@@ -1,7 +1,7 @@
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskDifficulty = "green" | "yellow" | "red" | "blue";
 export type TaskDurationUnit = "days" | "weeks" | "months";
-export type ViewMode = "board" | "history" | "clients" | "debts";
+export type ViewMode = "board" | "history" | "clients" | "debts" | "charts";
 export type BillingFrequency = "monthly" | "semiannual";
 export type ClientAlertState = "white" | "green" | "yellow" | "red";
 
@@ -41,6 +41,7 @@ export type ClientBilling = {
   amount: number;
   frequency: BillingFrequency;
   nextPaymentAt: string;
+  createdAt: string;
   debtAmount: number | null;
   debtPaidAmount: number;
   debtRemaining: number | null;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { ScrumBoardView } from "./components/ScrumBoardView";
 import { ScrumClientEditModal } from "./components/ScrumClientEditModal";
+import { ScrumChartsView } from "./components/ScrumChartsView";
 import { ScrumClientsView } from "./components/ScrumClientsView";
 import { ScrumDebtsView } from "./components/ScrumDebtsView";
 import { ScrumDurationModal } from "./components/ScrumDurationModal";
@@ -719,6 +720,8 @@ export function ScrumHomePage() {
           setDebtDueDate={setDebtDueDate}
         />
       ) : null}
+
+      {!isLoadingWorkspace && viewMode === "charts" ? <ScrumChartsView clients={clients} /> : null}
 
       <ScrumDurationModal
         editingDurationUnit={editingDurationUnit}
