@@ -36,6 +36,7 @@ import {
   secondaryButtonStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount } from "../scrum.utils";
+import { MonthlyEarningsChart } from "./MonthlyEarningsChart";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumClientsViewProps = {
@@ -172,6 +173,8 @@ export function ScrumClientsView({
           <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
         </div>
       </header>
+
+      <MonthlyEarningsChart currentMonthlyEarnings={monthlyEarnings} />
 
       <section style={panelStyle}>
         <form onSubmit={onCreateClient} style={clientFormGridStyle}>

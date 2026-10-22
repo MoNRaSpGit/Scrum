@@ -326,6 +326,32 @@ export const monthlyEarningsLabelStyle: CSSProperties = {
 };
 export const monthlyEarningsValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, color: "#1f4ed8" };
 
+export const earningsChartCardStyle: CSSProperties = {
+  width: "min(1240px, 100%)",
+  margin: "0 auto",
+  background: "#ffffff",
+  border: "1px solid #d7dfeb",
+  borderRadius: 8,
+  padding: 18,
+  display: "grid",
+  gap: 4,
+  position: "relative"
+};
+export const earningsChartTitleStyle: CSSProperties = { margin: 0, fontSize: 15, fontWeight: 800, color: "#162033" };
+export const earningsChartCaptionStyle: CSSProperties = { margin: 0, fontSize: 13, color: "#8c98ad" };
+export const earningsChartTooltipStyle: CSSProperties = {
+  position: "absolute",
+  pointerEvents: "none",
+  background: "#162033",
+  color: "#ffffff",
+  borderRadius: 6,
+  padding: "6px 10px",
+  fontSize: 12,
+  whiteSpace: "nowrap",
+  transform: "translate(-50%, -100%)",
+  zIndex: 2
+};
+
 export const primaryButtonStyle: CSSProperties = {
   minHeight: 42,
   padding: "0 16px",

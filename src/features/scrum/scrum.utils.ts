@@ -25,6 +25,18 @@ export function getMonthlyAmount(amount: number, frequency: BillingFrequency) {
   return amount / (frequency === "monthly" ? 1 : 6);
 }
 
+// Nombres de los ultimos "count" meses (el mas viejo primero), terminando
+// en el mes actual -- para el eje X del grafico de ganancia mensual.
+export function getLastMonthLabels(count: number, referenceDate: Date = new Date()) {
+  const labels: string[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const date = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - i, 1);
+    const label = date.toLocaleDateString("es-UY", { month: "short" }).replace(".", "");
+    labels.push(label.charAt(0).toUpperCase() + label.slice(1));
+  }
+  return labels;
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-UY", {
     timeZone: "America/Montevideo",
