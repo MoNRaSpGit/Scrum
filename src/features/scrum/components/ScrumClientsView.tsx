@@ -28,11 +28,14 @@ import {
   inputStyle,
   labelStyle,
   metaChipStyle,
+  monthlyEarningsLabelStyle,
+  monthlyEarningsStyle,
+  monthlyEarningsValueStyle,
   panelStyle,
   primaryButtonStyle,
   secondaryButtonStyle
 } from "../scrum.styles";
-import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel } from "../scrum.utils";
+import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount } from "../scrum.utils";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumClientsViewProps = {
@@ -151,12 +154,22 @@ export function ScrumClientsView({
 }: ScrumClientsViewProps) {
   // Cliente que se pidio eliminar y espera la confirmacion.
   const [clientToDelete, setClientToDelete] = useState<ClientBilling | null>(null);
+
+  // Ganancia mensual (pedido explicito, 22/10/2026): suma de todos los
+  // clientes normalizados a "por mes", para que un cliente que paga cada
+  // 6 meses cuente como un doceavo... un sexto de su monto cada mes.
+  const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyAmount(client.amount, client.frequency), 0);
+
   return (
     <section style={historyPanelStyle}>
       <header style={historyHeaderStyle}>
         <div style={{ display: "grid", gap: 4 }}>
           <strong style={{ fontSize: 18 }}>Clientes</strong>
           <span style={columnCaptionStyle}>Seguimiento de cobro segun frecuencia y proximidad del proximo pago.</span>
+        </div>
+        <div style={monthlyEarningsStyle}>
+          <span style={monthlyEarningsLabelStyle}>Ganancia mensual</span>
+          <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
         </div>
       </header>
 

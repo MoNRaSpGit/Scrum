@@ -18,6 +18,13 @@ export function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+// El monto se guarda por ciclo de facturacion (ej: 6000 cada 6 meses) --
+// esto lo normaliza a "por mes" para poder sumar clientes mensuales y
+// semestrales en una sola ganancia mensual.
+export function getMonthlyAmount(amount: number, frequency: BillingFrequency) {
+  return amount / (frequency === "monthly" ? 1 : 6);
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-UY", {
     timeZone: "America/Montevideo",

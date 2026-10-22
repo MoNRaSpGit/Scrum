@@ -307,6 +307,25 @@ export const taskDurationEditorStyle: CSSProperties = { display: "grid", gap: 10
 export const compactInputStyle: CSSProperties = { ...inputStyle, minHeight: 40 };
 export const compactNumberInputStyle: CSSProperties = { ...inputStyle, minHeight: 40 };
 
+export const monthlyEarningsStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-end",
+  gap: 2,
+  padding: "8px 16px",
+  borderRadius: 10,
+  background: "#eef5ff",
+  border: "1px solid #d7e6ff"
+};
+export const monthlyEarningsLabelStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: 0.4,
+  color: "#5b7bb8"
+};
+export const monthlyEarningsValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, color: "#1f4ed8" };
+
 export const primaryButtonStyle: CSSProperties = {
   minHeight: 42,
   padding: "0 16px",
