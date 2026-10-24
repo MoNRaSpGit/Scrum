@@ -1,5 +1,6 @@
 import type { ClientBilling } from "../scrum.types";
 import { getMonthlyAmount } from "../scrum.utils";
+import { GrowthByMonthChart } from "./GrowthByMonthChart";
 import { MonthlyEarningsChart } from "./MonthlyEarningsChart";
 import { NewClientsByMonthChart } from "./NewClientsByMonthChart";
 
@@ -13,6 +14,7 @@ export function ScrumChartsView({ clients }: Props) {
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <MonthlyEarningsChart currentMonthlyEarnings={monthlyEarnings} />
+      <GrowthByMonthChart clients={clients} />
       <NewClientsByMonthChart clients={clients} />
     </div>
   );
