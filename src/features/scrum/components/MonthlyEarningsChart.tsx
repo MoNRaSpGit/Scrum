@@ -9,9 +9,13 @@ import { formatCurrency, getLastMonthLabels } from "../scrum.utils";
 
 type Props = {
   currentMonthlyEarnings: number;
+  // Linea roja (24/10/2026): aumentos de plan acumulados al cierre de cada
+  // uno de los mismos 6 meses (ver getCumulativeRaisesByMonth).
+  raisesByMonth: number[];
 };
 
 const SERIES_COLOR = "#1f4ed8";
+const RAISES_COLOR = "#dc2626";
 const MUTED_TEXT = "#8c98ad";
 const GRIDLINE = "#e7ebf3";
 
@@ -47,13 +51,13 @@ const PADDING_RIGHT = 50;
 const PADDING_TOP = 20;
 const PADDING_BOTTOM = 28;
 
-export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
+export function MonthlyEarningsChart({ currentMonthlyEarnings, raisesByMonth }: Props) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const months = useMemo(() => getLastMonthLabels(6), []);
   const values = useMemo(() => [...FICTITIOUS_PRIOR_MONTHS, currentMonthlyEarnings], [currentMonthlyEarnings]);
 
-  const maxValue = Math.max(...values);
+  const maxValue = Math.max(...values, ...raisesByMonth);
   const step = roundToNiceStep(maxValue);
   const niceMax = Math.ceil((maxValue * 1.15) / step) * step;
 
@@ -67,6 +71,12 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
   });
 
   const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  // Segunda linea (roja), misma escala y mismos meses que la azul.
+  const raisePoints = points.map((point, index) => {
+    const value = raisesByMonth[index] ?? 0;
+    return { x: point.x, y: PADDING_TOP + plotHeight - (plotHeight * value) / niceMax, value };
+  });
+  const raisePath = raisePoints.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
   const areaPath = `${linePath} L ${points[points.length - 1].x} ${PADDING_TOP + plotHeight} L ${points[0].x} ${PADDING_TOP + plotHeight} Z`;
 
   const gridSteps = 4;
@@ -91,6 +101,14 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
     <section style={earningsChartCardStyle}>
       <h2 style={earningsChartTitleStyle}>Evolución de la ganancia mensual</h2>
       <p style={earningsChartCaptionStyle}>Últimos 6 meses · el mes actual es el total real de hoy</p>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "#4b5568", marginTop: 4 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 14, height: 3, borderRadius: 2, background: SERIES_COLOR }} /> Ganancia mensual
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 14, height: 3, borderRadius: 2, background: RAISES_COLOR }} /> Aumentos de plan (acumulado)
+        </span>
+      </div>
 
       <svg
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
@@ -109,6 +127,18 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
 
         <path d={areaPath} fill={SERIES_COLOR} opacity={0.1} stroke="none" />
         <path d={linePath} fill="none" stroke={SERIES_COLOR} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <path d={raisePath} fill="none" stroke={RAISES_COLOR} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        {raisePoints.map((point, index) => (
+          <g key={`raise-${index}`}>
+            <circle cx={point.x} cy={point.y} r={3.5} fill={RAISES_COLOR} stroke="#ffffff" strokeWidth={2} />
+            {/* Valor abajo del punto (el de la azul va arriba) para que no se pisen. */}
+            {point.value > 0 ? (
+              <text x={index === 0 ? point.x + 4 : point.x} y={point.y + 16} textAnchor={index === 0 ? "start" : "middle"} fontSize={11} fontWeight={700} fill={RAISES_COLOR}>
+                {formatCurrency(point.value)}
+              </text>
+            ) : null}
+          </g>
+        ))}
 
         {points.map((point, index) => {
           // El primero va alineado a la derecha (en vez de centrado) para
@@ -157,6 +187,7 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings }: Props) {
           }}
         >
           <strong>{formatCurrency(hovered.value)}</strong> · {hovered.month}
+          {hoverIndex !== null && (raisesByMonth[hoverIndex] ?? 0) > 0 ? ` · aumentos ${formatCurrency(raisesByMonth[hoverIndex])}` : ""}
         </div>
       ) : null}
     </section>
