@@ -19,15 +19,14 @@ export const MOVEMENT_LABELS: Record<ClientMovement["kind"], string> = {
   baja: "Baja de plan"
 };
 
+// Colores de la lista (pedido explicito 24/10/2026): lo que suma plata en
+// verde -- cliente nuevo verde claro, aumento de plan verde oscuro para
+// distinguirlos -- y la baja de plan en rojo.
 export const MOVEMENT_COLORS: Record<ClientMovement["kind"], string> = {
-  nuevo: "#1f4ed8",
-  aumento: "#dc2626",
-  baja: "#6b7280"
+  nuevo: "#22a35a",
+  aumento: "#0f5c34",
+  baja: "#dc2626"
 };
-
-export function getMonthKey(date: Date) {
-  return `${date.getFullYear()}-${date.getMonth()}`;
-}
 
 // Las fechas de alta y de cambio vienen con hora (ISO completo);
 // formatDate de scrum.utils espera solo YYYY-MM-DD, por eso una propia.
