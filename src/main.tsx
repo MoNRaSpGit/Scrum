@@ -26,7 +26,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
           pauseOnFocusLoss={false}
           pauseOnHover
           draggable={false}
-          theme="light"
+          theme="dark"
         />
       </Router>
     </QueryClientProvider>

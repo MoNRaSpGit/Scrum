@@ -9,9 +9,10 @@ type Props = {
 // Naranja (segundo tono secuencial, el primero -- azul -- ya lo usa el
 // grafico de ganancia mensual al lado): mismo criterio de un hue por
 // serie que recomienda la guia de dataviz.
-const BAR_COLOR = "#eb6834";
-const MUTED_TEXT = "#8c98ad";
-const GRIDLINE = "#e7ebf3";
+const BAR_COLOR = "#fb923c";
+const MUTED_TEXT = "#9aa3c0";
+const GRIDLINE = "rgba(255, 255, 255, 0.08)";
+const VALUE_LABEL_COLOR = "#eef1fb";
 
 const CHART_WIDTH = 640;
 const CHART_HEIGHT = 260;
@@ -89,7 +90,7 @@ export function NewClientsByMonthChart({ clients }: Props) {
         {gridLines.map((y) => (
           <line key={y} x1={PADDING_LEFT} y1={y} x2={CHART_WIDTH - PADDING_RIGHT} y2={y} stroke={GRIDLINE} strokeWidth={1} />
         ))}
-        <line x1={PADDING_LEFT} y1={baselineY} x2={CHART_WIDTH - PADDING_RIGHT} y2={baselineY} stroke="#c3c2b7" strokeWidth={1} />
+        <line x1={PADDING_LEFT} y1={baselineY} x2={CHART_WIDTH - PADDING_RIGHT} y2={baselineY} stroke="rgba(255, 255, 255, 0.18)" strokeWidth={1} />
 
         {columns.map((column, index) => (
           <g
@@ -114,7 +115,7 @@ export function NewClientsByMonthChart({ clients }: Props) {
             ) : null}
 
             {/* Numero arriba (valor directo) + nombritos chicos, pedido explicito 22/10/2026. */}
-            <text x={column.centerX} y={16} textAnchor="middle" fontSize={13} fontWeight={800} fill="#162033">
+            <text x={column.centerX} y={16} textAnchor="middle" fontSize={13} fontWeight={800} fill={VALUE_LABEL_COLOR}>
               {column.count}
             </text>
             {column.names.map((name, nameIndex) => (

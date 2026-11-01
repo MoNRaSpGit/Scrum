@@ -43,7 +43,7 @@ export function ScrumTimerEditModal({
           </button>
         </div>
 
-        <p style={{ margin: 0, fontSize: 13, color: "#6a7891" }}>
+        <p style={{ margin: 0, fontSize: 13, color: "#9aa3c0" }}>
           Por si arrancaste a trabajar antes de apretar "Iniciar cronometro" (o te olvidaste de arrancarlo). El tiempo acumulado de hoy queda en lo que pongas aca.
         </p>
 

@@ -220,7 +220,7 @@ function DebtCard({
                   <span>
                     {formatDateTime(movement.at)} {movement.kind === "charge" ? `— ${movement.detail}` : "— pago"}
                   </span>
-                  <span style={{ color: movement.kind === "charge" ? "#9e2b2b" : "#1f6f31", fontWeight: 700 }}>
+                  <span style={{ color: movement.kind === "charge" ? "#fb4570" : "#34d399", fontWeight: 700 }}>
                     {movement.kind === "charge" ? "+" : "-"}
                     {formatCurrency(movement.amount)}
                   </span>

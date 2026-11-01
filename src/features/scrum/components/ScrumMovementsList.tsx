@@ -6,8 +6,9 @@ type Props = {
   movements: ClientMovement[];
 };
 
-const GRIDLINE = "#e7ebf3";
-const MUTED_TEXT = "#8c98ad";
+const GRIDLINE = "#232a44";
+const MUTED_TEXT = "#9aa3c0";
+const TEXT_PRIMARY = "#eef1fb";
 
 // "YYYY-MM" (formato del <input type="month">) del mes de una fecha.
 function monthValue(date: Date) {
@@ -49,8 +50,9 @@ export function ScrumMovementsList({ movements }: Props) {
             borderRadius: 10,
             fontSize: 14,
             fontFamily: "inherit",
-            color: "#162033",
-            background: "#ffffff"
+            color: TEXT_PRIMARY,
+            background: "#0d111e",
+            colorScheme: "dark"
           }}
         />
       </div>
@@ -73,7 +75,7 @@ export function ScrumMovementsList({ movements }: Props) {
               }}
             >
               <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
-                <span style={{ fontSize: 13, color: "#162033" }}>
+                <span style={{ fontSize: 13, color: TEXT_PRIMARY }}>
                   <strong style={{ color: MOVEMENT_COLORS[movement.kind] }}>{MOVEMENT_LABELS[movement.kind]}</strong> · {movement.clientName}
                 </span>
                 <span style={{ fontSize: 12, color: MUTED_TEXT }}>

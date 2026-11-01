@@ -117,55 +117,54 @@ export const DIFFICULTY_LABELS: Record<TaskDifficulty, string> = {
 };
 
 export const DIFFICULTY_STYLES: Record<TaskDifficulty, { accent: string; background: string; text: string }> = {
-  // Fondo mas intenso (pedido explicito, 22/10/2026: "ponele el color un
-  // poco mas intenso pero sin ese borde lateral llamativo") -- todo el
-  // rectangulo de la tarjeta lleva el color, sin la barra lateral de antes.
+  // Modo oscuro (31/10/2026): fondo translucido del color + texto en la
+  // version clara/neon del mismo tono, en vez del pastel solido de antes.
   green: {
-    accent: "#16a34a",
-    background: "#c9f2dc",
-    text: "#146c37"
+    accent: "#34d399",
+    background: "rgba(52, 211, 153, 0.16)",
+    text: "#6ee7b7"
   },
   yellow: {
-    accent: "#d97706",
-    background: "#fbe3ab",
-    text: "#92600a"
+    accent: "#fbbf24",
+    background: "rgba(251, 191, 36, 0.16)",
+    text: "#fcd34d"
   },
   red: {
-    accent: "#dc2626",
-    background: "#fbd0d0",
-    text: "#991b1b"
+    accent: "#fb4570",
+    background: "rgba(251, 69, 112, 0.16)",
+    text: "#ff8aa3"
   },
   blue: {
-    accent: "#4f46e5",
-    background: "#d6d9fb",
-    text: "#4338ca"
+    accent: "#818cf8",
+    background: "rgba(129, 140, 248, 0.18)",
+    text: "#a5b4fc"
   }
 };
 
 export const CLIENT_ALERT_STYLES: Record<ClientAlertState, { background: string; color: string; border: string; label: string }> =
   {
     white: {
-      background: "#ffffff",
-      color: "#5c6270",
-      border: "#e5e7ef",
+      background: "#121728",
+      color: "#9aa3c0",
+      border: "#232a44",
       label: "Normal"
     },
     green: {
-      background: "#eafaf0",
-      color: "#146c37",
-      border: "#bfe8cf",
+      background: "rgba(52, 211, 153, 0.14)",
+      color: "#6ee7b7",
+      border: "rgba(52, 211, 153, 0.4)",
       label: "En mes"
     },
     yellow: {
-      background: "#fef6e7",
-      color: "#92600a",
-      border: "#f6dba8",
+      background: "rgba(251, 191, 36, 0.14)",
+      color: "#fcd34d",
+      border: "rgba(251, 191, 36, 0.4)",
       label: "En semana"
     },
     red: {
-      background: "#fdecec",
-      color: "#991b1b",
-      border: "#f6c1c1",
+      background: "rgba(251, 69, 112, 0.14)",
+      color: "#ff8aa3",
+      border: "rgba(251, 69, 112, 0.4)",
       label: "Vencido"
     }
   };

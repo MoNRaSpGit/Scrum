@@ -14,10 +14,11 @@ type Props = {
   raisesByMonth: number[];
 };
 
-const SERIES_COLOR = "#1f4ed8";
-const RAISES_COLOR = "#dc2626";
-const MUTED_TEXT = "#8c98ad";
-const GRIDLINE = "#e7ebf3";
+const SERIES_COLOR = "#22d3ee";
+const RAISES_COLOR = "#fb4570";
+const MUTED_TEXT = "#9aa3c0";
+const GRIDLINE = "rgba(255, 255, 255, 0.08)";
+const VALUE_LABEL_COLOR = "#eef1fb";
 
 // Historial inventado (pedido explicito, 22/10/2026: "pone cada mes...
 // inventa, no hay problema -- al principio bajo, de a poquito, los
@@ -101,7 +102,7 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings, raisesByMonth }: 
     <section style={earningsChartCardStyle}>
       <h2 style={earningsChartTitleStyle}>Evolución de la ganancia mensual</h2>
       <p style={earningsChartCaptionStyle}>Últimos 6 meses · el mes actual es el total real de hoy</p>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "#4b5568", marginTop: 4 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: MUTED_TEXT, marginTop: 4 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <span style={{ width: 14, height: 3, borderRadius: 2, background: SERIES_COLOR }} /> Ganancia mensual
         </span>
@@ -130,7 +131,7 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings, raisesByMonth }: 
         <path d={raisePath} fill="none" stroke={RAISES_COLOR} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         {raisePoints.map((point, index) => (
           <g key={`raise-${index}`}>
-            <circle cx={point.x} cy={point.y} r={3.5} fill={RAISES_COLOR} stroke="#ffffff" strokeWidth={2} />
+            <circle cx={point.x} cy={point.y} r={3.5} fill={RAISES_COLOR} stroke="#121728" strokeWidth={2} />
             {/* Valor abajo del punto (el de la azul va arriba) para que no se pisen. */}
             {point.value > 0 ? (
               <text x={index === 0 ? point.x + 4 : point.x} y={point.y + 16} textAnchor={index === 0 ? "start" : "middle"} fontSize={11} fontWeight={700} fill={RAISES_COLOR}>
@@ -147,7 +148,7 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings, raisesByMonth }: 
           const isFirst = index === 0;
           return (
             <g key={index}>
-              <circle cx={point.x} cy={point.y} r={4} fill={SERIES_COLOR} stroke="#ffffff" strokeWidth={2} />
+              <circle cx={point.x} cy={point.y} r={4} fill={SERIES_COLOR} stroke="#121728" strokeWidth={2} />
               <text x={point.x} y={CHART_HEIGHT - 6} textAnchor="middle" fontSize={11} fill={MUTED_TEXT}>
                 {point.month}
               </text>
@@ -157,7 +158,7 @@ export function MonthlyEarningsChart({ currentMonthlyEarnings, raisesByMonth }: 
                 textAnchor={isFirst ? "start" : "middle"}
                 fontSize={12}
                 fontWeight={800}
-                fill="#162033"
+                fill={VALUE_LABEL_COLOR}
               >
                 {formatCurrency(point.value)}
               </text>

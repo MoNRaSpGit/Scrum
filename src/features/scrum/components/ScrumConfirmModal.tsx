@@ -23,7 +23,7 @@ export function ScrumConfirmModal({ title, message, confirmLabel, onConfirm, onC
         onClick={(event) => event.stopPropagation()}
       >
         <strong style={{ fontSize: 18 }}>{title}</strong>
-        <p style={{ margin: 0, color: "#5b6576", lineHeight: 1.45 }}>{message}</p>
+        <p style={{ margin: 0, color: "#aab2cc", lineHeight: 1.45 }}>{message}</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button type="button" onClick={onCancel} style={secondaryButtonStyle} autoFocus>
             Cancelar

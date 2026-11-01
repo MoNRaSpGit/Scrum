@@ -21,11 +21,12 @@ export const MOVEMENT_LABELS: Record<ClientMovement["kind"], string> = {
 
 // Colores de la lista (pedido explicito 24/10/2026): lo que suma plata en
 // verde -- cliente nuevo verde claro, aumento de plan verde oscuro para
-// distinguirlos -- y la baja de plan en rojo.
+// distinguirlos -- y la baja de plan en rojo. Version oscura (31/10/2026):
+// tonos neon para que se destaquen sobre el fondo oscuro.
 export const MOVEMENT_COLORS: Record<ClientMovement["kind"], string> = {
-  nuevo: "#22a35a",
-  aumento: "#0f5c34",
-  baja: "#dc2626"
+  nuevo: "#34d399",
+  aumento: "#2dd4bf",
+  baja: "#fb4570"
 };
 
 // Las fechas de alta y de cambio vienen con hora (ISO completo);

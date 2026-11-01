@@ -155,9 +155,10 @@ export function ScrumClientEditModal({
               style={{
                 ...secondaryButtonStyle,
                 minWidth: 100,
-                background: "#0f766e",
+                background: "#2dd4bf",
+                boxShadow: "0 0 1px rgba(45, 212, 191, 0.9), 0 0 16px rgba(45, 212, 191, 0.45)",
                 border: "none",
-                color: "#ffffff"
+                color: "#071019"
               }}
             >
               {isAddingAmountChange ? "Agregando..." : "Agregar"}
@@ -168,16 +169,16 @@ export function ScrumClientEditModal({
         <div style={fieldGroupStyle}>
           <span style={labelStyle}>Historial del monto</span>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 13, color: "#4b5568" }}>
+            <div style={{ fontSize: 13, color: "#aab2cc" }}>
               Monto inicial: <strong>{formatCurrency(initialMonthlyAmount)}</strong> por mes
             </div>
             {sortedHistory.map((change) => (
-              <div key={change.id} style={{ fontSize: 13, color: "#4b5568" }}>
-                <span style={{ color: change.delta >= 0 ? "#1f6f31" : "#9e2b2b", fontWeight: 700 }}>
+              <div key={change.id} style={{ fontSize: 13, color: "#aab2cc" }}>
+                <span style={{ color: change.delta >= 0 ? "#34d399" : "#fb4570", fontWeight: 700 }}>
                   {change.delta >= 0 ? "+" : ""}
                   {formatCurrency(change.delta / cycleMonths)}
                 </span>{" "}
-                de {change.description} <span style={{ color: "#8c98ad" }}>({formatDate(change.changedAt.slice(0, 10))})</span>
+                de {change.description} <span style={{ color: "#9aa3c0" }}>({formatDate(change.changedAt.slice(0, 10))})</span>
               </div>
             ))}
           </div>

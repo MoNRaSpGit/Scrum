@@ -8,40 +8,58 @@ import type { TaskStatus } from "./scrum.types";
 // modales que no cambiaron de estructura (ScrumClientEditModal,
 // ScrumDurationModal, ScrumTimerEditModal, ScrumConfirmModal): heredan el
 // look nuevo solo. ----------------
+//
+// Modo oscuro "cine/neon" (31/10/2026, pedido explicito: "version oscura,
+// mas cool, tipo pelicula, con los botones fosforecentes"). Fondo casi
+// negro azulado + acentos bien saturados con glow (box-shadow) en los
+// botones principales. Mismos nombres exportados que antes, solo cambian
+// los valores -- los componentes no se tocan salvo contraste puntual.
 
 const FONT_FAMILY = '"Inter", "Segoe UI", system-ui, -apple-system, sans-serif';
 
 // Tokens de color -- un solo lugar para toda la paleta.
 const COLOR = {
-  bg: "#f5f6fb",
-  surface: "#ffffff",
-  surfaceSunken: "#f8f9fd",
-  border: "#e5e7ef",
-  borderStrong: "#d6d9e3",
-  textPrimary: "#14151a",
-  textSecondary: "#5c6270",
-  textMuted: "#8b90a0",
-  accent: "#4f46e5",
-  accentHover: "#4338ca",
-  accentSoft: "#eef0ff",
-  accentSoftBorder: "#d9dcfb",
-  success: "#16a34a",
-  successSoft: "#e8f7ee",
-  successSoftBorder: "#bfe8cf",
-  successText: "#146c37",
-  warning: "#d97706",
-  warningSoft: "#fef6e7",
-  warningSoftBorder: "#f6dba8",
-  warningText: "#92600a",
-  danger: "#dc2626",
-  dangerSoft: "#fdecec",
-  dangerSoftBorder: "#f6c1c1",
-  dangerText: "#991b1b"
+  bg: "#090c14",
+  surface: "#121728",
+  surfaceSunken: "#0d111e",
+  border: "#232a44",
+  borderStrong: "#323a5c",
+  textPrimary: "#eef1fb",
+  textSecondary: "#9aa3c0",
+  textMuted: "#6b7390",
+  // Cian electrico -- acento principal, usado en los botones "fosforecentes".
+  accent: "#22d3ee",
+  accentHover: "#7dd3fc",
+  accentSoft: "rgba(34, 211, 238, 0.14)",
+  accentSoftBorder: "rgba(34, 211, 238, 0.38)",
+  // Violeta -- segundo acento, para la accion "Avanzar" (distinta del cian).
+  accentAlt: "#a78bfa",
+  success: "#34d399",
+  successSoft: "rgba(52, 211, 153, 0.14)",
+  successSoftBorder: "rgba(52, 211, 153, 0.4)",
+  successText: "#6ee7b7",
+  warning: "#fbbf24",
+  warningSoft: "rgba(251, 191, 36, 0.14)",
+  warningSoftBorder: "rgba(251, 191, 36, 0.4)",
+  warningText: "#fcd34d",
+  danger: "#fb4570",
+  dangerSoft: "rgba(251, 69, 112, 0.14)",
+  dangerSoftBorder: "rgba(251, 69, 112, 0.4)",
+  dangerText: "#ff8aa3",
+  // Texto oscuro para escribir ARRIBA de un boton solido fosforecente
+  // (mejor contraste que blanco sobre un color tan brillante).
+  onNeon: "#071019"
 };
 
 const RADIUS = { sm: 8, md: 12, lg: 16, pill: 999 };
-const SHADOW_SM = "0 1px 2px rgba(20, 21, 26, 0.05)";
-const SHADOW_MD = "0 8px 24px rgba(20, 21, 26, 0.08)";
+const SHADOW_SM = "0 1px 3px rgba(0, 0, 0, 0.45)";
+const SHADOW_MD = "0 16px 40px rgba(0, 0, 0, 0.55)";
+
+// Glow fosforecente de cada acento -- reutilizado por todos los botones
+// solidos para que "brillen" sobre el fondo oscuro.
+const GLOW_ACCENT = "0 0 1px rgba(34, 211, 238, 0.9), 0 0 18px rgba(34, 211, 238, 0.5)";
+const GLOW_ACCENT_ALT = "0 0 1px rgba(167, 139, 250, 0.9), 0 0 18px rgba(167, 139, 250, 0.5)";
+const GLOW_DANGER = "0 0 1px rgba(251, 69, 112, 0.9), 0 0 18px rgba(251, 69, 112, 0.5)";
 
 export const pageStyle: CSSProperties = {
   minHeight: "100vh",
@@ -74,10 +92,11 @@ export const brandMarkStyle: CSSProperties = {
   height: 36,
   borderRadius: 10,
   background: COLOR.accent,
+  boxShadow: GLOW_ACCENT,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  color: "#ffffff",
+  color: COLOR.onNeon,
   fontWeight: 800,
   fontSize: 16
 };
@@ -97,8 +116,9 @@ export const boardTimerValueStyle: CSSProperties = {
   padding: "0 12px",
   borderRadius: RADIUS.sm,
   border: `1px solid ${COLOR.border}`,
-  background: COLOR.surface,
-  color: COLOR.textPrimary,
+  background: COLOR.surfaceSunken,
+  color: COLOR.accent,
+  textShadow: "0 0 10px rgba(34, 211, 238, 0.55)",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -169,7 +189,7 @@ export const inputStyle: CSSProperties = {
   padding: "0 12px",
   borderRadius: RADIUS.sm,
   border: `1px solid ${COLOR.borderStrong}`,
-  background: COLOR.surface,
+  background: COLOR.surfaceSunken,
   color: COLOR.textPrimary,
   // 16px, no 14: por debajo de eso Safari/Chrome en celular hacen zoom
   // automatico al enfocar el campo (bug encontrado 22/10/2026).
@@ -269,7 +289,7 @@ export const durationInlineStyle: CSSProperties = { display: "grid", gap: 10, gr
 // Pequeño punto de color + etiqueta, mas liviano que un badge solido
 // (usado arriba de cada tarjeta de tarea en el tablero rediseñado).
 export function difficultyDotStyle(color: string): CSSProperties {
-  return { width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 };
+  return { width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}`, flexShrink: 0 };
 }
 
 // ---------------- Historial (dejado de lado de la navegacion, pedido
@@ -387,7 +407,7 @@ export const debtHistoryTotalRowStyle: CSSProperties = {
 export const modalOverlayStyle: CSSProperties = {
   position: "fixed",
   inset: 0,
-  background: "rgba(15, 16, 24, 0.5)",
+  background: "rgba(3, 4, 8, 0.72)",
   display: "grid",
   placeItems: "center",
   padding: 20,
@@ -396,6 +416,7 @@ export const modalOverlayStyle: CSSProperties = {
 export const modalCardStyle: CSSProperties = {
   width: "min(460px, 100%)",
   background: COLOR.surface,
+  border: `1px solid ${COLOR.border}`,
   borderRadius: RADIUS.lg,
   padding: 20,
   display: "grid",
@@ -455,12 +476,14 @@ export const earningsChartCaptionStyle: CSSProperties = { margin: 0, fontSize: 1
 export const earningsChartTooltipStyle: CSSProperties = {
   position: "absolute",
   pointerEvents: "none",
-  background: COLOR.textPrimary,
-  color: "#ffffff",
+  background: COLOR.surface,
+  border: `1px solid ${COLOR.borderStrong}`,
+  color: COLOR.textPrimary,
   borderRadius: 6,
   padding: "6px 10px",
   fontSize: 12,
   whiteSpace: "nowrap",
+  boxShadow: SHADOW_MD,
   transform: "translate(-50%, -100%)",
   zIndex: 2
 };
@@ -472,14 +495,20 @@ export const primaryButtonStyle: CSSProperties = {
   border: "none",
   borderRadius: RADIUS.sm,
   background: COLOR.accent,
-  color: "#ffffff",
+  boxShadow: GLOW_ACCENT,
+  color: COLOR.onNeon,
   fontWeight: 700,
   cursor: "pointer",
   fontFamily: FONT_FAMILY
 };
 
 export function boardTimerButtonStyle(running: boolean): CSSProperties {
-  return { ...primaryButtonStyle, minHeight: 36, background: running ? COLOR.danger : COLOR.accent };
+  return {
+    ...primaryButtonStyle,
+    minHeight: 36,
+    background: running ? COLOR.danger : COLOR.accent,
+    boxShadow: running ? GLOW_DANGER : GLOW_ACCENT
+  };
 }
 
 export function tabButtonStyle(active: boolean): CSSProperties {
@@ -493,7 +522,7 @@ export function tabButtonStyle(active: boolean): CSSProperties {
     fontWeight: 700,
     fontSize: 14,
     cursor: "pointer",
-    boxShadow: active ? SHADOW_SM : "none",
+    boxShadow: active ? `${SHADOW_SM}, 0 0 10px rgba(34, 211, 238, 0.3)` : "none",
     fontFamily: FONT_FAMILY
   };
 }
@@ -540,11 +569,13 @@ export const ghostButtonStyle: CSSProperties = {
 export const advanceButtonStyle: CSSProperties = {
   ...primaryButtonStyle,
   minHeight: 36,
-  background: COLOR.textPrimary
+  background: COLOR.accentAlt,
+  boxShadow: GLOW_ACCENT_ALT
 };
 
 export const deleteButtonStyle: CSSProperties = {
   ...primaryButtonStyle,
   minHeight: 36,
-  background: COLOR.danger
+  background: COLOR.danger,
+  boxShadow: GLOW_DANGER
 };
