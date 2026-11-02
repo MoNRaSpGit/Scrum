@@ -347,6 +347,10 @@ export const clientRowButtonStyle: CSSProperties = {
   padding: 0,
   margin: 0,
   background: "transparent",
+  // Un <button> no hereda el color del texto de la pagina (el navegador
+  // le pone su propio color por defecto, oscuro) -- sin esto, el nombre
+  // del cliente quedaba invisible sobre el fondo oscuro de la tarjeta.
+  color: COLOR.textPrimary,
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
