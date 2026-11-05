@@ -463,6 +463,30 @@ export const monthlyEarningsLabelStyle: CSSProperties = {
 };
 export const monthlyEarningsValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, color: COLOR.accent };
 
+// "Por cobrar" (04/11/2026, pedido explicito): tarjeta al lado de
+// Ganancia mensual, mismo molde pero en rojo (igual que el estado
+// "vencido" de la tarjeta del cliente) -- es plata que todavia no se
+// cobro, no una proyeccion.
+export const summaryCardsRowStyle: CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap" };
+export const receivableStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-end",
+  gap: 2,
+  padding: "8px 16px",
+  borderRadius: RADIUS.md,
+  background: COLOR.dangerSoft,
+  border: `1px solid ${COLOR.dangerSoftBorder}`
+};
+export const receivableLabelStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: 0.4,
+  color: COLOR.dangerText
+};
+export const receivableValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, color: COLOR.danger };
+
 export const earningsChartCardStyle: CSSProperties = {
   width: "min(1240px, 100%)",
   margin: "0 auto",

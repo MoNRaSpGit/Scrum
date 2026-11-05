@@ -36,7 +36,11 @@ import {
   monthlyEarningsValueStyle,
   panelStyle,
   primaryButtonStyle,
-  secondaryButtonStyle
+  receivableLabelStyle,
+  receivableStyle,
+  receivableValueStyle,
+  secondaryButtonStyle,
+  summaryCardsRowStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount } from "../scrum.utils";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
@@ -165,6 +169,15 @@ export function ScrumClientsView({
   // 6 meses cuente como un doceavo... un sexto de su monto cada mes.
   const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyAmount(client.amount, client.frequency), 0);
 
+  // Por cobrar (pedido explicito, 04/11/2026): "los que no renove este
+  // mes... todavia no les cobre" -- la plata de los clientes vencidos
+  // (en rojo, proximo pago ya pasado), con el monto completo del ciclo
+  // (no el normalizado a mensual de arriba, porque es lo que falta
+  // cobrar de una, no una proyeccion).
+  const totalReceivable = clients
+    .filter((client) => getClientAlertState(client.nextPaymentAt, now) === "red")
+    .reduce((sum, client) => sum + client.amount, 0);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     onCreateClient(event);
     setIsFormOpen(false);
@@ -177,9 +190,15 @@ export function ScrumClientsView({
           <strong style={{ fontSize: 18 }}>Clientes</strong>
           <span style={columnCaptionStyle}>Seguimiento de cobro segun frecuencia y proximidad del proximo pago.</span>
         </div>
-        <div style={monthlyEarningsStyle}>
-          <span style={monthlyEarningsLabelStyle}>Ganancia mensual</span>
-          <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
+        <div style={summaryCardsRowStyle}>
+          <div style={monthlyEarningsStyle}>
+            <span style={monthlyEarningsLabelStyle}>Ganancia mensual</span>
+            <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
+          </div>
+          <div style={receivableStyle}>
+            <span style={receivableLabelStyle}>Por cobrar</span>
+            <strong style={receivableValueStyle}>{formatCurrency(totalReceivable)}</strong>
+          </div>
         </div>
       </header>
 
