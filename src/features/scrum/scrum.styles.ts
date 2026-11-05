@@ -487,6 +487,17 @@ export const receivableLabelStyle: CSSProperties = {
 };
 export const receivableValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, color: COLOR.danger };
 
+// "Resta este mes" (05/11/2026, pedido explicito): tercera tarjeta, en
+// amarillo -- plata de clientes que todavia no vencieron pero les toca
+// pagar antes de fin de mes ("faltan 5 dias", "faltan 6 dias").
+export const remainingThisMonthStyle: CSSProperties = {
+  ...receivableStyle,
+  background: COLOR.warningSoft,
+  border: `1px solid ${COLOR.warningSoftBorder}`
+};
+export const remainingThisMonthLabelStyle: CSSProperties = { ...receivableLabelStyle, color: COLOR.warningText };
+export const remainingThisMonthValueStyle: CSSProperties = { ...receivableValueStyle, color: COLOR.warning };
+
 export const earningsChartCardStyle: CSSProperties = {
   width: "min(1240px, 100%)",
   margin: "0 auto",

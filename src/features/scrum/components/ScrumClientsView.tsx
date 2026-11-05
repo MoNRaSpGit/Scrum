@@ -39,10 +39,13 @@ import {
   receivableLabelStyle,
   receivableStyle,
   receivableValueStyle,
+  remainingThisMonthLabelStyle,
+  remainingThisMonthStyle,
+  remainingThisMonthValueStyle,
   secondaryButtonStyle,
   summaryCardsRowStyle
 } from "../scrum.styles";
-import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount } from "../scrum.utils";
+import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount, getMontevideoDateKey } from "../scrum.utils";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumClientsViewProps = {
@@ -178,6 +181,15 @@ export function ScrumClientsView({
     .filter((client) => getClientAlertState(client.nextPaymentAt, now) === "red")
     .reduce((sum, client) => sum + client.amount, 0);
 
+  // Resta cobrar este mes (pedido explicito, 05/11/2026): clientes que
+  // todavia no vencieron pero su proximo pago cae dentro del mes actual
+  // (los "Faltan 5 dias", "Faltan 6 dias"). Monto completo del ciclo.
+  const todayKey = getMontevideoDateKey(now);
+  const monthKey = todayKey.slice(0, 7);
+  const remainingThisMonth = clients
+    .filter((client) => client.nextPaymentAt >= todayKey && client.nextPaymentAt.slice(0, 7) === monthKey)
+    .reduce((sum, client) => sum + client.amount, 0);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     onCreateClient(event);
     setIsFormOpen(false);
@@ -198,6 +210,10 @@ export function ScrumClientsView({
           <div style={receivableStyle}>
             <span style={receivableLabelStyle}>Por cobrar</span>
             <strong style={receivableValueStyle}>{formatCurrency(totalReceivable)}</strong>
+          </div>
+          <div style={remainingThisMonthStyle}>
+            <span style={remainingThisMonthLabelStyle}>Resta este mes</span>
+            <strong style={remainingThisMonthValueStyle}>{formatCurrency(remainingThisMonth)}</strong>
           </div>
         </div>
       </header>
