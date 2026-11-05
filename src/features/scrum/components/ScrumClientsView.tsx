@@ -36,9 +36,10 @@ import {
   monthlyEarningsValueStyle,
   panelStyle,
   primaryButtonStyle,
-  receivableLabelStyle,
-  receivableStyle,
-  receivableValueStyle,
+  remainingListItemStyle,
+  remainingListStyle,
+  remainingListTotalStyle,
+  remainingWrapperStyle,
   remainingThisMonthLabelStyle,
   remainingThisMonthStyle,
   remainingThisMonthValueStyle,
@@ -172,23 +173,17 @@ export function ScrumClientsView({
   // 6 meses cuente como un doceavo... un sexto de su monto cada mes.
   const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyAmount(client.amount, client.frequency), 0);
 
-  // Por cobrar (pedido explicito, 04/11/2026): "los que no renove este
-  // mes... todavia no les cobre" -- la plata de los clientes vencidos
-  // (en rojo, proximo pago ya pasado), con el monto completo del ciclo
-  // (no el normalizado a mensual de arriba, porque es lo que falta
-  // cobrar de una, no una proyeccion).
-  const totalReceivable = clients
-    .filter((client) => getClientAlertState(client.nextPaymentAt, now) === "red")
-    .reduce((sum, client) => sum + client.amount, 0);
-
-  // Resta cobrar este mes (pedido explicito, 05/11/2026): clientes que
-  // todavia no vencieron pero su proximo pago cae dentro del mes actual
-  // (los "Faltan 5 dias", "Faltan 6 dias"). Monto completo del ciclo.
+  // Resta cobrar este mes (pedido explicito, 05/11/2026): vencidos que
+  // todavia no pagaron + los que vencen antes de fin de mes ("Faltan 5
+  // dias"...). Monto completo del ciclo. Al tocar la tarjeta se abre la
+  // lista de quien tiene que pagar y cuanto.
   const todayKey = getMontevideoDateKey(now);
   const monthKey = todayKey.slice(0, 7);
-  const remainingThisMonth = clients
-    .filter((client) => client.nextPaymentAt >= todayKey && client.nextPaymentAt.slice(0, 7) === monthKey)
-    .reduce((sum, client) => sum + client.amount, 0);
+  const pendingClients = clients
+    .filter((client) => client.nextPaymentAt < todayKey || client.nextPaymentAt.slice(0, 7) === monthKey)
+    .sort((a, b) => a.nextPaymentAt.localeCompare(b.nextPaymentAt));
+  const remainingThisMonth = pendingClients.reduce((sum, client) => sum + client.amount, 0);
+  const [isRemainingOpen, setIsRemainingOpen] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     onCreateClient(event);
@@ -207,13 +202,32 @@ export function ScrumClientsView({
             <span style={monthlyEarningsLabelStyle}>Ganancia mensual</span>
             <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
           </div>
-          <div style={receivableStyle}>
-            <span style={receivableLabelStyle}>Por cobrar</span>
-            <strong style={receivableValueStyle}>{formatCurrency(totalReceivable)}</strong>
-          </div>
-          <div style={remainingThisMonthStyle}>
-            <span style={remainingThisMonthLabelStyle}>Resta este mes</span>
-            <strong style={remainingThisMonthValueStyle}>{formatCurrency(remainingThisMonth)}</strong>
+          <div style={remainingWrapperStyle}>
+            <button type="button" onClick={() => setIsRemainingOpen((current) => !current)} style={{ ...remainingThisMonthStyle, cursor: "pointer", font: "inherit" }} aria-expanded={isRemainingOpen}>
+              <span style={remainingThisMonthLabelStyle}>Resta este mes {isRemainingOpen ? "▴" : "▾"}</span>
+              <strong style={remainingThisMonthValueStyle}>{formatCurrency(remainingThisMonth)}</strong>
+            </button>
+            {isRemainingOpen ? (
+              <div style={remainingListStyle}>
+                {pendingClients.length === 0 ? (
+                  <span style={columnCaptionStyle}>No queda nadie por cobrar este mes.</span>
+                ) : (
+                  pendingClients.map((client) => (
+                    <div key={client.id} style={remainingListItemStyle}>
+                      <span>
+                        <strong>{client.name}</strong>{" "}
+                        <span style={columnCaptionStyle}>{getClientRelativeLabel(client.nextPaymentAt, now)}</span>
+                      </span>
+                      <strong>{formatCurrency(client.amount)}</strong>
+                    </div>
+                  ))
+                )}
+                <div style={remainingListTotalStyle}>
+                  <span>Total</span>
+                  <strong>{formatCurrency(remainingThisMonth)}</strong>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </header>

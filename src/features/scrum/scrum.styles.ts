@@ -498,6 +498,28 @@ export const remainingThisMonthStyle: CSSProperties = {
 export const remainingThisMonthLabelStyle: CSSProperties = { ...receivableLabelStyle, color: COLOR.warningText };
 export const remainingThisMonthValueStyle: CSSProperties = { ...receivableValueStyle, color: COLOR.warning };
 
+// Lista desplegable de quien paga este mes (se abre al tocar la tarjeta).
+export const remainingWrapperStyle: CSSProperties = { position: "relative" };
+export const remainingListStyle: CSSProperties = {
+  position: "absolute",
+  top: "calc(100% + 6px)",
+  right: 0,
+  zIndex: 20,
+  minWidth: 260,
+  maxWidth: "min(360px, 90vw)",
+  maxHeight: 320,
+  overflowY: "auto",
+  display: "grid",
+  gap: 8,
+  padding: 12,
+  borderRadius: RADIUS.md,
+  background: COLOR.surface,
+  border: `1px solid ${COLOR.warningSoftBorder}`,
+  boxShadow: SHADOW_SM
+};
+export const remainingListItemStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, color: COLOR.textPrimary, fontSize: 14 };
+export const remainingListTotalStyle: CSSProperties = { ...remainingListItemStyle, borderTop: `1px solid ${COLOR.border}`, paddingTop: 8, color: COLOR.warning };
+
 export const earningsChartCardStyle: CSSProperties = {
   width: "min(1240px, 100%)",
   margin: "0 auto",
