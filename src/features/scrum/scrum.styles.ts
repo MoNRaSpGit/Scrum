@@ -154,6 +154,7 @@ export const tabsWrapStyle: CSSProperties = {
 // ---------------- Paneles / layout general ----------------
 export const loadingPanelStyle: CSSProperties = { width: "min(1240px, 100%)", margin: "0 auto" };
 export const panelStyle: CSSProperties = {
+  boxSizing: "border-box",
   width: "min(1240px, 100%)",
   margin: "0 auto",
   background: COLOR.surface,
@@ -376,13 +377,18 @@ export const clientActionsStyle: CSSProperties = { display: "flex", gap: 8, flex
 export const clientMetaGridStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const clientPrimaryValueStyle: CSSProperties = { fontSize: 20, fontWeight: 800, color: COLOR.textPrimary };
 export const clientFooterStyle: CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
-// Rediseno 14/11/2026: ya no es una caja dentro de otra caja, sino una
-// seccion separada por una linea fina (Deuda / Materiales / Aviso).
+// "Ficha" del cliente (14/11/2026): cada bloque (Cobro, Comision, Materiales,
+// Deuda, Avisos) es una tarjeta del mismo peso visual dentro de una grilla.
 export const debtPanelStyle: CSSProperties = {
   display: "grid",
   gap: 10,
-  paddingTop: 12,
-  borderTop: `1px solid ${COLOR.border}`
+  alignContent: "start",
+  padding: 14,
+  boxSizing: "border-box",
+  border: `1px solid ${COLOR.border}`,
+  borderRadius: RADIUS.md,
+  background: COLOR.surfaceSunken,
+  minWidth: 0
 };
 export const debtSummaryRowStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const debtPaymentFormStyle: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
@@ -744,4 +750,38 @@ export const clientSectionStyle: CSSProperties = {
   gap: 10,
   paddingTop: 12,
   borderTop: `1px solid ${COLOR.border}`
+};
+
+export const fichaGridStyle: CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" };
+export const fichaLabelStyle: CSSProperties = { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.5, color: COLOR.textMuted };
+export const fichaHeaderStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 };
+export const fichaBigStyle: CSSProperties = { fontSize: 24, fontWeight: 800, lineHeight: 1.1, color: COLOR.textPrimary };
+export const fichaSubStyle: CSSProperties = { fontSize: 12, color: COLOR.textSecondary };
+export const fichaTableStyle: CSSProperties = { display: "grid", gap: 0 };
+export const fichaRowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "baseline",
+  gap: 10,
+  padding: "7px 0",
+  borderTop: `1px solid ${COLOR.border}`,
+  fontSize: 14,
+  color: COLOR.textSecondary
+};
+export const fichaRowStrongStyle: CSSProperties = { ...fichaRowStyle, color: COLOR.textPrimary, fontWeight: 800, fontSize: 15 };
+export const fichaBarTrackStyle: CSSProperties = { height: 8, borderRadius: RADIUS.pill, background: COLOR.border, overflow: "hidden" };
+export function fichaBarFillStyle(percent: number, color: string): CSSProperties {
+  return { width: `${Math.max(0, Math.min(100, percent))}%`, height: "100%", borderRadius: RADIUS.pill, background: color };
+}
+export const fichaLinksStyle: CSSProperties = { display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" };
+export const fichaLinkButtonStyle: CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: COLOR.accent,
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: "pointer",
+  padding: "6px 8px",
+  borderRadius: RADIUS.sm,
+  fontFamily: FONT_FAMILY
 };

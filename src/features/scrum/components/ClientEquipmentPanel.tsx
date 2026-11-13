@@ -7,9 +7,15 @@ import {
   debtHistoryTotalRowStyle,
   debtPanelStyle,
   debtPaymentFormStyle,
-  debtSummaryRowStyle,
+  fichaBarFillStyle,
+  fichaBarTrackStyle,
+  fichaBigStyle,
+  fichaHeaderStyle,
+  fichaLabelStyle,
+  fichaLinkButtonStyle,
+  fichaLinksStyle,
+  fichaSubStyle,
   ghostButtonStyle,
-  metaChipStyle,
   secondaryButtonStyle
 } from "../scrum.styles";
 import type { ClientBilling } from "../scrum.types";
@@ -74,9 +80,10 @@ export function ClientEquipmentPanel({ client, onClientChanged }: { client: Clie
   if (!equipment && !isEditing) {
     return (
       <div style={debtPanelStyle}>
-        <div style={debtSummaryRowStyle}>
-          <span style={metaChipStyle}>Materiales: sin cargar</span>
-          <button type="button" onClick={startEditing} style={secondaryButtonStyle}>
+        <span style={fichaLabelStyle}>Materiales</span>
+        <span style={fichaSubStyle}>Equipo que comprás y le cobrás aparte, en cuotas.</span>
+        <div style={fichaLinksStyle}>
+          <button type="button" onClick={startEditing} style={fichaLinkButtonStyle}>
             + Agregar materiales
           </button>
         </div>
@@ -87,36 +94,43 @@ export function ClientEquipmentPanel({ client, onClientChanged }: { client: Clie
   if (isEditing || !equipment) {
     return (
       <div style={debtPanelStyle}>
-        <span style={metaChipStyle}>Materiales (se cobran aparte, no suman a la ganancia)</span>
+        <span style={fichaLabelStyle}>Materiales</span>
+        <span style={fichaSubStyle}>Se cobran aparte, no suman a la ganancia.</span>
         <div style={debtPaymentFormStyle}>
           <input type="number" min="1" step="1" value={installmentInput} onChange={(event) => setInstallmentInput(event.target.value)} placeholder="Cuota (ej: 200)" style={debtAmountInputStyle} />
           <input type="number" min="1" max="120" step="1" value={monthsInput} onChange={(event) => setMonthsInput(event.target.value)} placeholder="Meses (ej: 10)" style={debtAmountInputStyle} />
         </div>
         <div style={debtPaymentFormStyle}>
           <button type="button" onClick={savePlan} disabled={busy} style={secondaryButtonStyle}>
-            Guardar materiales
+            Guardar
           </button>
           <button type="button" onClick={() => setIsEditing(false)} style={ghostButtonStyle}>
             Cancelar
           </button>
         </div>
-        {message ? <span style={metaChipStyle}>{message}</span> : null}
+        {message ? <span style={fichaSubStyle}>{message}</span> : null}
       </div>
     );
   }
 
   const settled = equipment.remaining <= 0;
+  const paidPercent = equipment.total > 0 ? (equipment.paid / equipment.total) * 100 : 0;
 
   return (
     <div style={debtPanelStyle}>
-      <div style={{ display: "grid", gap: 2 }}>
-        <strong style={{ fontSize: 13 }}>
-          Materiales · {settled ? "saldados" : `faltan ${formatCurrency(equipment.remaining)} de ${formatCurrency(equipment.total)}`}
-        </strong>
-        <span style={metaChipStyle}>
-          {formatCurrency(equipment.installmentAmount)} x {equipment.months} meses
-          {settled ? "" : ` · quedan ~${equipment.installmentsLeft} cuotas`}
-        </span>
+      <div style={fichaHeaderStyle}>
+        <span style={fichaLabelStyle}>Materiales</span>
+        <span style={{ ...fichaLabelStyle, color: "#c4b5fd" }}>{Math.round(paidPercent)}% pago</span>
+      </div>
+      <div style={fichaBigStyle}>{settled ? "Saldados" : formatCurrency(equipment.remaining)}</div>
+      <span style={fichaSubStyle}>
+        {settled ? `Se pagó el total de ${formatCurrency(equipment.total)}` : `faltan de ${formatCurrency(equipment.total)}`}
+        {" · "}
+        {formatCurrency(equipment.installmentAmount)} x {equipment.months} meses
+        {settled ? "" : ` · quedan ~${equipment.installmentsLeft} cuotas`}
+      </span>
+      <div style={fichaBarTrackStyle}>
+        <div style={fichaBarFillStyle(paidPercent, "#a78bfa")} />
       </div>
 
       {!settled ? (
@@ -131,18 +145,18 @@ export function ClientEquipmentPanel({ client, onClientChanged }: { client: Clie
             style={debtAmountInputStyle}
           />
           <button type="button" onClick={registerPayment} disabled={busy} style={secondaryButtonStyle}>
-            Registrar pago de materiales
+            Registrar pago
           </button>
         </div>
       ) : null}
 
-      <div style={debtPaymentFormStyle}>
+      <div style={fichaLinksStyle}>
         {equipment.payments.length > 0 ? (
-          <button type="button" onClick={() => setShowDetails((current) => !current)} style={ghostButtonStyle}>
+          <button type="button" onClick={() => setShowDetails((current) => !current)} style={fichaLinkButtonStyle}>
             {showDetails ? "Ocultar pagos" : "Ver pagos"}
           </button>
         ) : null}
-        <button type="button" onClick={startEditing} style={ghostButtonStyle}>
+        <button type="button" onClick={startEditing} style={fichaLinkButtonStyle}>
           Editar plan
         </button>
         <button
@@ -152,7 +166,7 @@ export function ClientEquipmentPanel({ client, onClientChanged }: { client: Clie
               void run(`/scrum/clients/${client.id}/equipment`, { method: "DELETE" });
             }
           }}
-          style={ghostButtonStyle}
+          style={{ ...fichaLinkButtonStyle, color: "#9aa3c0" }}
         >
           Quitar
         </button>
@@ -187,7 +201,7 @@ export function ClientEquipmentPanel({ client, onClientChanged }: { client: Clie
         </div>
       ) : null}
 
-      {message ? <span style={metaChipStyle}>{message}</span> : null}
+      {message ? <span style={fichaSubStyle}>{message}</span> : null}
     </div>
   );
 }

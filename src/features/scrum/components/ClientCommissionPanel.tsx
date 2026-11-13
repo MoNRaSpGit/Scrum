@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { requestJson } from "../scrum.api";
-import { debtAmountInputStyle, debtPanelStyle, debtPaymentFormStyle, ghostButtonStyle, metaChipStyle, secondaryButtonStyle } from "../scrum.styles";
+import {
+  debtAmountInputStyle,
+  debtPanelStyle,
+  debtPaymentFormStyle,
+  fichaBigStyle,
+  fichaHeaderStyle,
+  fichaLabelStyle,
+  fichaLinkButtonStyle,
+  fichaLinksStyle,
+  fichaRowStrongStyle,
+  fichaRowStyle,
+  fichaSubStyle,
+  fichaTableStyle,
+  ghostButtonStyle,
+  secondaryButtonStyle
+} from "../scrum.styles";
 import type { ClientBilling } from "../scrum.types";
 import { formatCurrency, getMonthlyAmount } from "../scrum.utils";
 
@@ -49,20 +64,20 @@ export function ClientCommissionPanel({ client, onClientChanged }: { client: Cli
   if (isEditing) {
     return (
       <div style={debtPanelStyle}>
-        <strong style={{ fontSize: 13 }}>Comisión</strong>
+        <span style={fichaLabelStyle}>Comisión</span>
         <div style={debtPaymentFormStyle}>
           <input type="number" min="0" max="100" step="1" value={input} onChange={(event) => setInput(event.target.value)} placeholder="%" style={debtAmountInputStyle} />
-          <span style={metaChipStyle}>% del monto</span>
+          <span style={fichaSubStyle}>% del monto</span>
         </div>
         <div style={debtPaymentFormStyle}>
           <button type="button" onClick={submit} disabled={busy} style={secondaryButtonStyle}>
-            Guardar comisión
+            Guardar
           </button>
           <button type="button" onClick={() => setIsEditing(false)} style={ghostButtonStyle}>
             Cancelar
           </button>
         </div>
-        {message ? <span style={metaChipStyle}>{message}</span> : null}
+        {message ? <span style={fichaSubStyle}>{message}</span> : null}
       </div>
     );
   }
@@ -70,9 +85,10 @@ export function ClientCommissionPanel({ client, onClientChanged }: { client: Cli
   if (percent <= 0) {
     return (
       <div style={debtPanelStyle}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={metaChipStyle}>Comisión: sin comisión</span>
-          <button type="button" onClick={startEditing} style={secondaryButtonStyle}>
+        <span style={fichaLabelStyle}>Comisión</span>
+        <span style={fichaSubStyle}>Sin comisión: todo lo que paga el cliente es tuyo.</span>
+        <div style={fichaLinksStyle}>
+          <button type="button" onClick={startEditing} style={fichaLinkButtonStyle}>
             + Agregar comisión
           </button>
         </div>
@@ -85,14 +101,28 @@ export function ClientCommissionPanel({ client, onClientChanged }: { client: Cli
 
   return (
     <div style={debtPanelStyle}>
-      <div style={{ display: "grid", gap: 2 }}>
-        <strong style={{ fontSize: 13 }}>Comisión · {percent}%</strong>
-        <span style={metaChipStyle}>
-          Por mes: comisión {formatCurrency(commission)} · te quedan {formatCurrency(monthly - commission)}
-        </span>
+      <div style={fichaHeaderStyle}>
+        <span style={fichaLabelStyle}>Comisión</span>
+        <span style={{ ...fichaLabelStyle, color: "#6ee7b7" }}>{percent}%</span>
       </div>
-      <div style={debtPaymentFormStyle}>
-        <button type="button" onClick={startEditing} style={ghostButtonStyle}>
+      <div style={fichaBigStyle}>{formatCurrency(commission)}</div>
+      <span style={fichaSubStyle}>por mes para quien vendió</span>
+      <div style={fichaTableStyle}>
+        <div style={fichaRowStyle}>
+          <span>Monto por mes</span>
+          <span>{formatCurrency(monthly)}</span>
+        </div>
+        <div style={fichaRowStyle}>
+          <span>Comisión ({percent}%)</span>
+          <span>− {formatCurrency(commission)}</span>
+        </div>
+        <div style={{ ...fichaRowStrongStyle, color: "#6ee7b7" }}>
+          <span>Te queda</span>
+          <span>{formatCurrency(monthly - commission)}</span>
+        </div>
+      </div>
+      <div style={fichaLinksStyle}>
+        <button type="button" onClick={startEditing} style={fichaLinkButtonStyle}>
           Editar %
         </button>
         <button
@@ -100,12 +130,12 @@ export function ClientCommissionPanel({ client, onClientChanged }: { client: Cli
           onClick={() => {
             if (window.confirm("¿Quitar la comisión de este cliente?")) void save(0);
           }}
-          style={ghostButtonStyle}
+          style={{ ...fichaLinkButtonStyle, color: "#9aa3c0" }}
         >
           Quitar
         </button>
       </div>
-      {message ? <span style={metaChipStyle}>{message}</span> : null}
+      {message ? <span style={fichaSubStyle}>{message}</span> : null}
     </div>
   );
 }

@@ -12,7 +12,6 @@ import {
   debtHistoryTotalRowStyle,
   debtPanelStyle,
   debtPaymentFormStyle,
-  debtSummaryRowStyle,
   emptyStateStyle,
   fieldGroupStyle,
   formActionsStyle,
@@ -31,17 +30,23 @@ import {
   clientChipStyle,
   clientChipsRowStyle,
   clientDeleteLinkStyle,
-  clientFactLabelStyle,
-  clientFactStyle,
-  clientFactValueStyle,
-  clientFactsGridStyle,
   clientHeaderAmountStyle,
   clientHeaderTextStyle,
-  clientMainActionsStyle,
   clientNameStyle,
   clientNewButtonStyle,
   clientNewFormPanelStyle,
   clientSummaryGridStyle,
+  fichaBarFillStyle,
+  fichaBarTrackStyle,
+  fichaBigStyle,
+  fichaGridStyle,
+  fichaHeaderStyle,
+  fichaLabelStyle,
+  fichaLinkButtonStyle,
+  fichaLinksStyle,
+  fichaRowStyle,
+  fichaSubStyle,
+  fichaTableStyle,
   summaryTileAccentStyle,
   summaryTileAltStyle,
   summaryTileColors,
@@ -93,18 +98,18 @@ function ClientDebtPanel({
   }
 
   const isSettled = (client.debtRemaining ?? 0) <= 0;
+  const paidPercent = client.debtAmount > 0 ? (client.debtPaidAmount / client.debtAmount) * 100 : 0;
 
   return (
     <div style={debtPanelStyle}>
-      <div style={debtSummaryRowStyle}>
-        <span style={metaChipStyle}>
-          Deuda: {isSettled ? "saldada" : `${formatCurrency(client.debtRemaining ?? 0)} de ${formatCurrency(client.debtAmount)}`}
-        </span>
-        {client.debtPayments.length > 0 ? (
-          <button type="button" onClick={() => setShowDetails((current) => !current)} style={secondaryButtonStyle}>
-            {showDetails ? "Ocultar detalles" : "Detalles"}
-          </button>
-        ) : null}
+      <div style={fichaHeaderStyle}>
+        <span style={fichaLabelStyle}>Deuda</span>
+        <span style={{ ...fichaLabelStyle, color: "#fcd34d" }}>{Math.round(paidPercent)}% paga</span>
+      </div>
+      <div style={fichaBigStyle}>{isSettled ? "Saldada" : formatCurrency(client.debtRemaining ?? 0)}</div>
+      <span style={fichaSubStyle}>{isSettled ? `Se pagó el total de ${formatCurrency(client.debtAmount)}` : `falta de ${formatCurrency(client.debtAmount)}`}</span>
+      <div style={fichaBarTrackStyle}>
+        <div style={fichaBarFillStyle(paidPercent, "#fbbf24")} />
       </div>
 
       {!isSettled ? (
@@ -126,7 +131,15 @@ function ClientDebtPanel({
             }}
             style={secondaryButtonStyle}
           >
-            Registrar pago de deuda
+            Registrar pago
+          </button>
+        </div>
+      ) : null}
+
+      {client.debtPayments.length > 0 ? (
+        <div style={fichaLinksStyle}>
+          <button type="button" onClick={() => setShowDetails((current) => !current)} style={fichaLinkButtonStyle}>
+            {showDetails ? "Ocultar pagos" : "Ver pagos"}
           </button>
         </div>
       ) : null}
@@ -386,32 +399,37 @@ export function ScrumClientsView({
 
               {expanded ? (
                 <div style={clientDetailsStyle}>
-                  <div style={clientFactsGridStyle}>
-                    <div style={clientFactStyle}>
-                      <span style={clientFactLabelStyle}>Próximo pago</span>
-                      <span style={clientFactValueStyle}>{formatDate(client.nextPaymentAt)}</span>
+                  <div style={fichaGridStyle}>
+                    <div style={debtPanelStyle}>
+                      <div style={fichaHeaderStyle}>
+                        <span style={fichaLabelStyle}>Cobro</span>
+                        <span style={{ ...fichaLabelStyle, color: alertStyle.color }}>{getClientRelativeLabel(client.nextPaymentAt, now)}</span>
+                      </div>
+                      <div style={fichaBigStyle}>{formatCurrency(client.amount)}</div>
+                      <span style={fichaSubStyle}>{BILLING_FREQUENCY_LABELS[client.frequency]}</span>
+                      <div style={fichaTableStyle}>
+                        <div style={fichaRowStyle}>
+                          <span>Próximo pago</span>
+                          <span>{formatDate(client.nextPaymentAt)}</span>
+                        </div>
+                      </div>
+                      <div style={fichaLinksStyle}>
+                        <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={secondaryButtonStyle}>
+                          Registrar pago
+                        </button>
+                        <button type="button" onClick={() => onOpenEditClient(client)} style={fichaLinkButtonStyle}>
+                          Editar cliente
+                        </button>
+                      </div>
                     </div>
-                    <div style={clientFactStyle}>
-                      <span style={clientFactLabelStyle}>Frecuencia</span>
-                      <span style={clientFactValueStyle}>{BILLING_FREQUENCY_LABELS[client.frequency]}</span>
-                    </div>
+
+                    <ClientCommissionPanel client={client} onClientChanged={onClientChanged} />
+
+                    <ClientEquipmentPanel client={client} onClientChanged={onClientChanged} />
+
+                    <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
+
                   </div>
-
-                  <div style={clientMainActionsStyle}>
-                    <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={{ ...primaryButtonStyle, flex: 1 }}>
-                      Registrar pago
-                    </button>
-                    <button type="button" onClick={() => onOpenEditClient(client)} style={secondaryButtonStyle}>
-                      Editar
-                    </button>
-                  </div>
-
-                  <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
-
-                  <ClientCommissionPanel client={client} onClientChanged={onClientChanged} />
-
-                  <ClientEquipmentPanel client={client} onClientChanged={onClientChanged} />
-
 
                   <button type="button" onClick={() => setClientToDelete(client)} style={clientDeleteLinkStyle}>
                     Eliminar cliente
