@@ -38,6 +38,16 @@ export type ClientAmountChange = {
   changedAt: string;
 };
 
+export type ClientEquipment = {
+  installmentAmount: number;
+  months: number;
+  total: number;
+  paid: number;
+  remaining: number;
+  installmentsLeft: number;
+  payments: ClientDebtPayment[];
+};
+
 export type ClientBilling = {
   id: number;
   name: string;
@@ -50,6 +60,8 @@ export type ClientBilling = {
   debtRemaining: number | null;
   debtPayments: ClientDebtPayment[];
   amountHistory: ClientAmountChange[];
+  // Materiales/equipo cobrados aparte (no suman a la ganancia mensual).
+  equipment?: ClientEquipment | null;
 };
 
 export type DebtCharge = {

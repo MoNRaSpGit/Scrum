@@ -585,6 +585,7 @@ export function ScrumHomePage() {
           onCreateClient={handleCreateClient}
           onDeleteClient={handleDeleteClient}
           onOpenEditClient={handleOpenEditClient}
+          onClientChanged={(updated) => setClients((current) => current.map((client) => (client.id === updated.id ? updated : client)))}
           onRegisterClientDebtPayment={handleRegisterClientDebtPayment}
           onRegisterClientPayment={handleRegisterClientPayment}
           setClientAmount={setClientAmount}

@@ -47,6 +47,7 @@ import {
   summaryCardsRowStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount, getMontevideoDateKey } from "../scrum.utils";
+import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumClientsViewProps = {
@@ -58,6 +59,7 @@ type ScrumClientsViewProps = {
   clients: ClientBilling[];
   expandedClientId: number | null;
   now: number;
+  onClientChanged: (client: ClientBilling) => void;
   onCreateClient: (event: FormEvent<HTMLFormElement>) => void;
   onDeleteClient: (clientId: number) => void;
   onOpenEditClient: (client: ClientBilling) => void;
@@ -151,6 +153,7 @@ export function ScrumClientsView({
   clients,
   expandedClientId,
   now,
+  onClientChanged,
   onCreateClient,
   onDeleteClient,
   onOpenEditClient,
@@ -182,6 +185,9 @@ export function ScrumClientsView({
   const pendingClients = clients
     .filter((client) => client.nextPaymentAt < todayKey || client.nextPaymentAt.slice(0, 7) === monthKey)
     .sort((a, b) => a.nextPaymentAt.localeCompare(b.nextPaymentAt));
+  // Equipos (14/11/2026): lo que falta cobrar de materiales. Va aparte y NO
+  // entra en la ganancia mensual.
+  const equipmentPending = clients.reduce((sum, client) => sum + (client.equipment?.remaining ?? 0), 0);
   const remainingThisMonth = pendingClients.reduce((sum, client) => sum + client.amount, 0);
   const [isRemainingOpen, setIsRemainingOpen] = useState(false);
 
@@ -201,6 +207,10 @@ export function ScrumClientsView({
           <div style={monthlyEarningsStyle}>
             <span style={monthlyEarningsLabelStyle}>Ganancia mensual</span>
             <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
+          </div>
+          <div style={monthlyEarningsStyle}>
+            <span style={monthlyEarningsLabelStyle}>Equipos por cobrar</span>
+            <strong style={monthlyEarningsValueStyle}>{formatCurrency(equipmentPending)}</strong>
           </div>
           <div style={remainingWrapperStyle}>
             <button type="button" onClick={() => setIsRemainingOpen((current) => !current)} style={{ ...remainingThisMonthStyle, cursor: "pointer", font: "inherit" }} aria-expanded={isRemainingOpen}>
@@ -369,6 +379,8 @@ export function ScrumClientsView({
                   </div>
 
                   <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
+
+                  <ClientEquipmentPanel client={client} onClientChanged={onClientChanged} />
 
                   <div style={clientActionsStyle}>
                     <button type="button" onClick={() => onOpenEditClient(client)} style={secondaryButtonStyle}>
