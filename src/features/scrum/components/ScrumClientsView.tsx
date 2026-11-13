@@ -51,11 +51,14 @@ import {
   summaryTileAltStyle,
   summaryTileColors,
   summaryTileCommissionStyle,
+  summaryTileDangerStyle,
+  summaryTileNetStyle,
   summaryTileLabelStyle,
   summaryTileValueStyle,
   summaryTileWarningStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyCommission, getMonthlyNet, getMontevideoDateKey } from "../scrum.utils";
+import { ExpenseModal, ExpensesList, useScrumExpenses, type ScrumExpense } from "./ScrumExpenses";
 import { ClientCommissionPanel } from "./ClientCommissionPanel";
 import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
@@ -195,6 +198,12 @@ export function ScrumClientsView({
   const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyNet(client), 0);
   // Comision (14/11/2026): lo que se le da a quien vendio, por mes. La
   // ganancia mensual de arriba ya cuenta solo lo que queda para nosotros.
+  // Gastos (14/11/2026): se descuentan de la ganancia mensual (bruta) para dar
+  // la ganancia neta, lo que queda de verdad.
+  const { expenses, total: expensesTotal, save: saveExpense, remove: removeExpense } = useScrumExpenses();
+  const [isExpensesOpen, setIsExpensesOpen] = useState(false);
+  const [expenseModal, setExpenseModal] = useState<{ expense: ScrumExpense | null } | null>(null);
+  const netEarnings = monthlyEarnings - expensesTotal;
   const monthlyCommission = clients.reduce((sum, client) => sum + getMonthlyCommission(client), 0);
 
   // Resta cobrar este mes (pedido explicito, 05/11/2026): vencidos que
@@ -223,14 +232,46 @@ export function ScrumClientsView({
         <strong style={{ fontSize: 18 }}>Clientes</strong>
         <div style={clientSummaryGridStyle}>
           <div style={summaryTileAccentStyle}>
-            <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.accent[0] }}>Ganancia mensual</span>
+            <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.accent[0] }}>Ganancia bruta</span>
             <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.accent[1] }}>{formatCurrency(monthlyEarnings)}</strong>
           </div>
+          <div style={{ ...summaryTileDangerStyle, position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setIsExpensesOpen((current) => !current)}
+              aria-expanded={isExpensesOpen}
+              style={{ all: "unset", cursor: "pointer", display: "grid", gap: 2 }}
+            >
+              <span style={{ ...summaryTileLabelStyle, color: "#ff8aa3" }}>Gastos {isExpensesOpen ? "▴" : "▾"}</span>
+              <strong style={{ ...summaryTileValueStyle, color: "#fb4570" }}>{formatCurrency(expensesTotal)}</strong>
+            </button>
+            <button
+              type="button"
+              onClick={() => setExpenseModal({ expense: null })}
+              aria-label="Agregar gasto"
+              style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 999, border: "1px solid rgba(251, 69, 112, 0.5)", background: "rgba(251, 69, 112, 0.18)", color: "#ff8aa3", fontSize: 18, lineHeight: 1, cursor: "pointer" }}
+            >
+              +
+            </button>
+          </div>
+          <div style={{ ...summaryTileNetStyle, gridColumn: "1 / -1" }}>
+            <span style={{ ...summaryTileLabelStyle, color: "#7dd3fc" }}>Ganancia neta (después de gastos)</span>
+            <strong style={{ ...summaryTileValueStyle, fontSize: 28, color: netEarnings < 0 ? "#fb4570" : "#eef1fb" }}>{formatCurrency(netEarnings)}</strong>
+          </div>
+          {isExpensesOpen ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <ExpensesList expenses={expenses} total={expensesTotal} onAdd={() => setExpenseModal({ expense: null })} onEdit={(expense) => setExpenseModal({ expense })} />
+            </div>
+          ) : null}
           <div style={summaryTileAltStyle}>
             <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos por cobrar</span>
             <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentPending)}</strong>
           </div>
-          <div style={remainingWrapperStyle}>
+          <div style={summaryTileCommissionStyle}>
+            <span style={{ ...summaryTileLabelStyle, color: "#6ee7b7" }}>Comisión</span>
+            <strong style={{ ...summaryTileValueStyle, color: "#34d399" }}>{formatCurrency(monthlyCommission)}</strong>
+          </div>
+          <div style={{ ...remainingWrapperStyle, gridColumn: "1 / -1" }}>
             <button
               type="button"
               onClick={() => setIsRemainingOpen((current) => !current)}
@@ -262,11 +303,10 @@ export function ScrumClientsView({
               </div>
             ) : null}
           </div>
-          <div style={summaryTileCommissionStyle}>
-            <span style={{ ...summaryTileLabelStyle, color: "#6ee7b7" }}>Comisión</span>
-            <strong style={{ ...summaryTileValueStyle, color: "#34d399" }}>{formatCurrency(monthlyCommission)}</strong>
-          </div>
         </div>
+        {expenseModal ? (
+          <ExpenseModal expense={expenseModal.expense} onClose={() => setExpenseModal(null)} onSave={saveExpense} onDelete={removeExpense} />
+        ) : null}
       </header>
 
       <section style={{ display: "grid", gap: 10 }}>

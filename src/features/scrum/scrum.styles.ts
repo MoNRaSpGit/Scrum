@@ -674,6 +674,19 @@ export const summaryTileCommissionStyle: CSSProperties = {
   background: COLOR.successSoft,
   border: `1px solid ${COLOR.successSoftBorder}`
 };
+export const summaryTileDangerStyle: CSSProperties = {
+  ...summaryTileBase,
+  background: COLOR.dangerSoft,
+  border: `1px solid ${COLOR.dangerSoftBorder}`
+};
+// Ganancia neta: la tarjeta principal (lo que queda de verdad).
+export const summaryTileNetStyle: CSSProperties = {
+  ...summaryTileBase,
+  padding: "14px 16px",
+  background: "linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(52, 211, 153, 0.16))",
+  border: `1px solid ${COLOR.accent}`,
+  boxShadow: "0 0 18px rgba(34, 211, 238, 0.18)"
+};
 export const summaryTileLabelStyle: CSSProperties = { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 };
 export const summaryTileValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, lineHeight: 1.15 };
 export const summaryTileColors = { accent: [COLOR.accentHover, COLOR.accent], alt: ["#c4b5fd", COLOR.accentAlt], warning: [COLOR.warningText, COLOR.warning] } as const;
