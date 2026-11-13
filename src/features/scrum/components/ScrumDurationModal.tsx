@@ -4,6 +4,9 @@ import {
   compactInputStyle,
   compactNumberInputStyle,
   deleteButtonStyle,
+  fieldGroupStyle,
+  inputStyle,
+  labelStyle,
   modalCardStyle,
   modalCloseButtonStyle,
   modalHeaderStyle,
@@ -15,6 +18,8 @@ import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumDurationModalProps = {
   editingDifficulty: TaskDifficulty;
+  editingDescription: string;
+  setEditingDescription: Dispatch<SetStateAction<string>>;
   editingDurationUnit: TaskDurationUnit;
   editingDurationValue: string;
   editingTaskId: number | null;
@@ -30,6 +35,8 @@ type ScrumDurationModalProps = {
 
 export function ScrumDurationModal({
   editingDifficulty,
+  editingDescription,
+  setEditingDescription,
   editingDurationUnit,
   editingDurationValue,
   editingTaskId,
@@ -51,10 +58,25 @@ export function ScrumDurationModal({
     <div style={modalOverlayStyle} onClick={onClose}>
       <div style={modalCardStyle} onClick={(event) => event.stopPropagation()}>
         <div style={modalHeaderStyle}>
-          <strong style={{ fontSize: 18 }}>Editar plazo</strong>
+          <strong style={{ fontSize: 18 }}>Editar tarea</strong>
           <button type="button" onClick={onClose} style={modalCloseButtonStyle}>
             Cerrar
           </button>
+        </div>
+
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle} htmlFor="task-edit-description">
+            Descripción
+          </label>
+          <textarea
+            id="task-edit-description"
+            value={editingDescription}
+            onChange={(event) => setEditingDescription(event.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder="Sin descripción"
+            style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
+          />
         </div>
 
         <div style={taskDurationEditorStyle}>

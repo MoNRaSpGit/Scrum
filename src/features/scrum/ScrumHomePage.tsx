@@ -55,6 +55,7 @@ export function ScrumHomePage() {
   const [editingDifficulty, setEditingDifficulty] = useState<TaskDifficulty>("green");
   const [editingDurationUnit, setEditingDurationUnit] = useState<TaskDurationUnit>("days");
   const [editingDurationValue, setEditingDurationValue] = useState("1");
+  const [editingDescription, setEditingDescription] = useState("");
   const [boardTimerState, setBoardTimerState] = useState(() => getInitialBoardTimerState(Date.now()));
   const [isEditingTimer, setIsEditingTimer] = useState(false);
   const [editingTimerHours, setEditingTimerHours] = useState("0");
@@ -238,7 +239,9 @@ export function ScrumHomePage() {
     const durationChanged = editingDurationUnit !== currentTask.durationUnit || Math.round(parsedDurationValue) !== currentTask.durationValue;
     const difficultyChanged = editingDifficulty !== currentTask.difficulty;
 
-    if (!durationChanged && !difficultyChanged) {
+    const descriptionChanged = editingDescription.trim() !== (currentTask.description ?? "").trim();
+
+    if (!durationChanged && !difficultyChanged && !descriptionChanged) {
       setEditingTaskId(null);
       return;
     }
@@ -255,6 +258,19 @@ export function ScrumHomePage() {
         }
         if (editingDurationUnit === "weeks" && parsedDurationValue > 4) {
           toast.error("Si usas semanas, la cantidad maxima es 4.");
+          return;
+        }
+      }
+
+      if (descriptionChanged) {
+        const descriptionResponse = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/description`, {
+          method: "PATCH",
+          body: JSON.stringify({ description: editingDescription.trim() })
+        });
+        setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? descriptionResponse.item : task)));
+        if (!durationChanged && !difficultyChanged) {
+          setEditingTaskId(null);
+          toast.success("Descripción actualizada.");
           return;
         }
       }
@@ -502,6 +518,7 @@ export function ScrumHomePage() {
     setEditingDurationUnit(task.durationUnit);
     setEditingDurationValue(String(task.durationValue));
     setEditingDifficulty(task.difficulty);
+    setEditingDescription(task.description ?? "");
   }
 
   return (
@@ -575,6 +592,8 @@ export function ScrumHomePage() {
         editingDurationUnit={editingDurationUnit}
         editingDurationValue={editingDurationValue}
         editingDifficulty={editingDifficulty}
+        editingDescription={editingDescription}
+        setEditingDescription={setEditingDescription}
         editingTaskId={editingTaskId}
         editingTaskTitle={tasks.find((task) => task.id === editingTaskId)?.title}
         onClose={() => setEditingTaskId(null)}
