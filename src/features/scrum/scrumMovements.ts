@@ -47,12 +47,14 @@ export function buildClientMovements(clients: ClientBilling[]): ClientMovement[]
   const movements: ClientMovement[] = [];
   for (const client of clients) {
     const history = [...client.amountHistory].sort((a, b) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime());
+    // Comision: los movimientos cuentan solo lo que queda para nosotros.
+    const netFactor = 1 - (client.commissionPercent ?? 0) / 100;
     const startAmount = history.length ? history[0].previousAmount : client.amount;
     movements.push({
       kind: "nuevo",
       clientName: client.name,
       at: client.createdAt,
-      monthlyDelta: getMonthlyAmount(startAmount, client.frequency),
+      monthlyDelta: getMonthlyAmount(startAmount, client.frequency) * netFactor,
       detail: `Entró con ${formatCurrency(startAmount)}${client.frequency === "monthly" ? " por mes" : " cada 6 meses"}`
     });
     for (const change of history) {
@@ -61,7 +63,7 @@ export function buildClientMovements(clients: ClientBilling[]): ClientMovement[]
         kind: change.newAmount > change.previousAmount ? "aumento" : "baja",
         clientName: client.name,
         at: change.changedAt,
-        monthlyDelta: getMonthlyAmount(change.newAmount - change.previousAmount, client.frequency),
+        monthlyDelta: getMonthlyAmount(change.newAmount - change.previousAmount, client.frequency) * netFactor,
         detail: `${formatCurrency(change.previousAmount)} → ${formatCurrency(change.newAmount)}${change.description ? ` · ${change.description}` : ""}`
       });
     }

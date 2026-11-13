@@ -45,11 +45,13 @@ import {
   summaryTileAccentStyle,
   summaryTileAltStyle,
   summaryTileColors,
+  summaryTileCommissionStyle,
   summaryTileLabelStyle,
   summaryTileValueStyle,
   summaryTileWarningStyle
 } from "../scrum.styles";
-import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount, getMontevideoDateKey } from "../scrum.utils";
+import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyCommission, getMonthlyNet, getMontevideoDateKey } from "../scrum.utils";
+import { ClientCommissionPanel } from "./ClientCommissionPanel";
 import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
@@ -177,7 +179,10 @@ export function ScrumClientsView({
   // Ganancia mensual (pedido explicito, 22/10/2026): suma de todos los
   // clientes normalizados a "por mes", para que un cliente que paga cada
   // 6 meses cuente como un doceavo... un sexto de su monto cada mes.
-  const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyAmount(client.amount, client.frequency), 0);
+  const monthlyEarnings = clients.reduce((sum, client) => sum + getMonthlyNet(client), 0);
+  // Comision (14/11/2026): lo que se le da a quien vendio, por mes. La
+  // ganancia mensual de arriba ya cuenta solo lo que queda para nosotros.
+  const monthlyCommission = clients.reduce((sum, client) => sum + getMonthlyCommission(client), 0);
 
   // Resta cobrar este mes (pedido explicito, 05/11/2026): vencidos que
   // todavia no pagaron + los que vencen antes de fin de mes ("Faltan 5
@@ -212,7 +217,7 @@ export function ScrumClientsView({
             <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos por cobrar</span>
             <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentPending)}</strong>
           </div>
-          <div style={{ ...remainingWrapperStyle, gridColumn: "1 / -1" }}>
+          <div style={remainingWrapperStyle}>
             <button
               type="button"
               onClick={() => setIsRemainingOpen((current) => !current)}
@@ -223,7 +228,7 @@ export function ScrumClientsView({
               <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.warning[1] }}>{formatCurrency(remainingThisMonth)}</strong>
             </button>
             {isRemainingOpen ? (
-              <div style={{ ...remainingListStyle, left: 0, right: 0, maxWidth: "none" }}>
+              <div style={{ ...remainingListStyle, left: 0, right: "auto", width: "min(320px, 86vw)" }}>
                 {pendingClients.length === 0 ? (
                   <span style={columnCaptionStyle}>No queda nadie por cobrar este mes.</span>
                 ) : (
@@ -243,6 +248,10 @@ export function ScrumClientsView({
                 </div>
               </div>
             ) : null}
+          </div>
+          <div style={summaryTileCommissionStyle}>
+            <span style={{ ...summaryTileLabelStyle, color: "#6ee7b7" }}>Comisión</span>
+            <strong style={{ ...summaryTileValueStyle, color: "#34d399" }}>{formatCurrency(monthlyCommission)}</strong>
           </div>
         </div>
       </header>
@@ -398,6 +407,8 @@ export function ScrumClientsView({
                   </div>
 
                   <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
+
+                  <ClientCommissionPanel client={client} onClientChanged={onClientChanged} />
 
                   <ClientEquipmentPanel client={client} onClientChanged={onClientChanged} />
 

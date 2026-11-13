@@ -25,6 +25,16 @@ export function getMonthlyAmount(amount: number, frequency: BillingFrequency) {
   return amount / (frequency === "monthly" ? 1 : 6);
 }
 
+// Comision (14/11/2026): lo que se le da a quien vendio, por mes, y lo que
+// queda para nosotros. La ganancia mensual cuenta solo el neto.
+export function getMonthlyCommission(client: { amount: number; frequency: BillingFrequency; commissionPercent?: number }) {
+  return (getMonthlyAmount(client.amount, client.frequency) * (client.commissionPercent ?? 0)) / 100;
+}
+
+export function getMonthlyNet(client: { amount: number; frequency: BillingFrequency; commissionPercent?: number }) {
+  return getMonthlyAmount(client.amount, client.frequency) - getMonthlyCommission(client);
+}
+
 // Nombres de los ultimos "count" meses (el mas viejo primero), terminando
 // en el mes actual -- para el eje X del grafico de ganancia mensual.
 export function getLastMonthLabels(count: number, referenceDate: Date = new Date()) {

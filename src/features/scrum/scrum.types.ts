@@ -60,6 +60,8 @@ export type ClientBilling = {
   debtRemaining: number | null;
   debtPayments: ClientDebtPayment[];
   amountHistory: ClientAmountChange[];
+  // Comision: % del monto que se le da a quien vendio (0 = sin comision).
+  commissionPercent?: number;
   // Materiales/equipo cobrados aparte (no suman a la ganancia mensual).
   equipment?: ClientEquipment | null;
 };

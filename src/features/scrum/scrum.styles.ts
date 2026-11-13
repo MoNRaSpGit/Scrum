@@ -663,6 +663,11 @@ export const summaryTileAltStyle: CSSProperties = {
   border: "1px solid rgba(167, 139, 250, 0.38)"
 };
 export const summaryTileWarningStyle: CSSProperties = { ...summaryTileBase, background: COLOR.warningSoft, border: `1px solid ${COLOR.warningSoftBorder}` };
+export const summaryTileCommissionStyle: CSSProperties = {
+  ...summaryTileBase,
+  background: COLOR.successSoft,
+  border: `1px solid ${COLOR.successSoftBorder}`
+};
 export const summaryTileLabelStyle: CSSProperties = { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 };
 export const summaryTileValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, lineHeight: 1.15 };
 export const summaryTileColors = { accent: [COLOR.accentHover, COLOR.accent], alt: ["#c4b5fd", COLOR.accentAlt], warning: [COLOR.warningText, COLOR.warning] } as const;
