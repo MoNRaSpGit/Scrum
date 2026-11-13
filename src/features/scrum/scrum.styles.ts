@@ -376,13 +376,13 @@ export const clientActionsStyle: CSSProperties = { display: "flex", gap: 8, flex
 export const clientMetaGridStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const clientPrimaryValueStyle: CSSProperties = { fontSize: 20, fontWeight: 800, color: COLOR.textPrimary };
 export const clientFooterStyle: CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
+// Rediseno 14/11/2026: ya no es una caja dentro de otra caja, sino una
+// seccion separada por una linea fina (Deuda / Materiales / Aviso).
 export const debtPanelStyle: CSSProperties = {
   display: "grid",
   gap: 10,
-  padding: 14,
-  border: `1px solid ${COLOR.border}`,
-  borderRadius: RADIUS.sm,
-  background: COLOR.surfaceSunken
+  paddingTop: 12,
+  borderTop: `1px solid ${COLOR.border}`
 };
 export const debtSummaryRowStyle: CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const debtPaymentFormStyle: CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
@@ -639,4 +639,104 @@ export const deleteButtonStyle: CSSProperties = {
   minHeight: 36,
   background: COLOR.danger,
   boxShadow: GLOW_DANGER
+};
+
+// ---------------- Clientes: rediseno de UX (14/11/2026) ----------------
+// Pedido: "no me gusta mucho como se ve, mejorar la parte de clientes,
+// los colores me siguen gustando". Misma paleta, mejor jerarquia: resumen en
+// grilla pareja, tarjeta con monto a la vista y franja de estado, acciones
+// ordenadas y "Eliminar" discreto.
+export const clientSummaryGridStyle: CSSProperties = { display: "grid", gap: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" };
+const summaryTileBase: CSSProperties = {
+  display: "grid",
+  gap: 2,
+  padding: "12px 14px",
+  borderRadius: RADIUS.md,
+  textAlign: "left",
+  fontFamily: FONT_FAMILY,
+  minWidth: 0
+};
+export const summaryTileAccentStyle: CSSProperties = { ...summaryTileBase, background: COLOR.accentSoft, border: `1px solid ${COLOR.accentSoftBorder}` };
+export const summaryTileAltStyle: CSSProperties = {
+  ...summaryTileBase,
+  background: "rgba(167, 139, 250, 0.14)",
+  border: "1px solid rgba(167, 139, 250, 0.38)"
+};
+export const summaryTileWarningStyle: CSSProperties = { ...summaryTileBase, background: COLOR.warningSoft, border: `1px solid ${COLOR.warningSoftBorder}` };
+export const summaryTileLabelStyle: CSSProperties = { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 };
+export const summaryTileValueStyle: CSSProperties = { fontSize: 22, fontWeight: 800, lineHeight: 1.15 };
+export const summaryTileColors = { accent: [COLOR.accentHover, COLOR.accent], alt: ["#c4b5fd", COLOR.accentAlt], warning: [COLOR.warningText, COLOR.warning] } as const;
+
+export const clientNewButtonStyle: CSSProperties = {
+  minHeight: 46,
+  width: "100%",
+  boxSizing: "border-box",
+  borderRadius: RADIUS.md,
+  border: `1px dashed ${COLOR.accentSoftBorder}`,
+  background: "transparent",
+  color: COLOR.accent,
+  fontWeight: 700,
+  fontSize: 14,
+  cursor: "pointer",
+  fontFamily: FONT_FAMILY
+};
+export const clientNewFormPanelStyle: CSSProperties = {
+  display: "grid",
+  gap: 14,
+  boxSizing: "border-box",
+  padding: 16,
+  borderRadius: RADIUS.md,
+  border: `1px solid ${COLOR.borderStrong}`,
+  background: COLOR.surfaceSunken
+};
+
+export function clientCardAccentStyle(color: string): CSSProperties {
+  return {
+    border: `1px solid ${COLOR.border}`,
+    borderLeft: `4px solid ${color}`,
+    borderRadius: RADIUS.md,
+    background: COLOR.surface,
+    padding: "14px 16px",
+    display: "grid",
+    gap: 10,
+    boxShadow: SHADOW_SM
+  };
+}
+export const clientHeaderTextStyle: CSSProperties = { display: "grid", gap: 4, minWidth: 0 };
+export const clientNameStyle: CSSProperties = { fontSize: 16, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+export const clientHeaderAmountStyle: CSSProperties = { display: "grid", gap: 2, justifyItems: "end", flexShrink: 0 };
+export const clientAmountStyle: CSSProperties = { fontSize: 17, fontWeight: 800, color: COLOR.textPrimary };
+export const clientChipsRowStyle: CSSProperties = { display: "flex", gap: 6, flexWrap: "wrap" };
+export function clientChipStyle(color: string, background: string): CSSProperties {
+  return { fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: RADIUS.pill, color, background };
+}
+export const clientFactsGridStyle: CSSProperties = { display: "grid", gap: 8, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" };
+export const clientFactStyle: CSSProperties = {
+  display: "grid",
+  gap: 2,
+  padding: "8px 10px",
+  borderRadius: RADIUS.sm,
+  background: COLOR.surfaceSunken,
+  border: `1px solid ${COLOR.border}`
+};
+export const clientFactLabelStyle: CSSProperties = { fontSize: 11, fontWeight: 700, color: COLOR.textMuted, textTransform: "uppercase", letterSpacing: 0.4 };
+export const clientFactValueStyle: CSSProperties = { fontSize: 14, fontWeight: 700, color: COLOR.textPrimary };
+export const clientMainActionsStyle: CSSProperties = { display: "flex", gap: 8 };
+export const clientDeleteLinkStyle: CSSProperties = {
+  justifySelf: "end",
+  border: "none",
+  background: "transparent",
+  color: COLOR.dangerText,
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: "pointer",
+  padding: "6px 4px",
+  fontFamily: FONT_FAMILY,
+  opacity: 0.85
+};
+export const clientSectionStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+  paddingTop: 12,
+  borderTop: `1px solid ${COLOR.border}`
 };

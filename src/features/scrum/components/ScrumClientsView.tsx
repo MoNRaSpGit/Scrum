@@ -1,17 +1,10 @@
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { BILLING_FREQUENCY_LABELS, CLIENT_ALERT_STYLES, type BillingFrequency, type ClientBilling } from "../scrum.types";
 import {
-  clientActionsStyle,
-  clientCardStyle,
   clientDetailsStyle,
-  clientFooterStyle,
   clientFormGridStyle,
   clientGridStyle,
-  clientMetaGridStyle,
-  clientPrimaryValueStyle,
   clientRowButtonStyle,
-  clientStatusBadgeStyle,
-  collapsibleFormHeaderStyle,
   columnCaptionStyle,
   debtAmountInputStyle,
   debtHistoryListStyle,
@@ -20,31 +13,41 @@ import {
   debtPanelStyle,
   debtPaymentFormStyle,
   debtSummaryRowStyle,
-  deleteButtonStyle,
-  difficultyDotStyle,
   emptyStateStyle,
   fieldGroupStyle,
   formActionsStyle,
-  ghostButtonStyle,
-  historyHeaderStyle,
   historyPanelStyle,
   inputStyle,
   labelStyle,
   metaChipStyle,
-  monthlyEarningsLabelStyle,
-  monthlyEarningsStyle,
-  monthlyEarningsValueStyle,
-  panelStyle,
   primaryButtonStyle,
   remainingListItemStyle,
   remainingListStyle,
   remainingListTotalStyle,
   remainingWrapperStyle,
-  remainingThisMonthLabelStyle,
-  remainingThisMonthStyle,
-  remainingThisMonthValueStyle,
   secondaryButtonStyle,
-  summaryCardsRowStyle
+  clientAmountStyle,
+  clientCardAccentStyle,
+  clientChipStyle,
+  clientChipsRowStyle,
+  clientDeleteLinkStyle,
+  clientFactLabelStyle,
+  clientFactStyle,
+  clientFactValueStyle,
+  clientFactsGridStyle,
+  clientHeaderAmountStyle,
+  clientHeaderTextStyle,
+  clientMainActionsStyle,
+  clientNameStyle,
+  clientNewButtonStyle,
+  clientNewFormPanelStyle,
+  clientSummaryGridStyle,
+  summaryTileAccentStyle,
+  summaryTileAltStyle,
+  summaryTileColors,
+  summaryTileLabelStyle,
+  summaryTileValueStyle,
+  summaryTileWarningStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyAmount, getMontevideoDateKey } from "../scrum.utils";
 import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
@@ -198,27 +201,29 @@ export function ScrumClientsView({
 
   return (
     <section style={historyPanelStyle}>
-      <header style={historyHeaderStyle}>
-        <div style={{ display: "grid", gap: 4 }}>
-          <strong style={{ fontSize: 18 }}>Clientes</strong>
-          <span style={columnCaptionStyle}>Seguimiento de cobro segun frecuencia y proximidad del proximo pago.</span>
-        </div>
-        <div style={summaryCardsRowStyle}>
-          <div style={monthlyEarningsStyle}>
-            <span style={monthlyEarningsLabelStyle}>Ganancia mensual</span>
-            <strong style={monthlyEarningsValueStyle}>{formatCurrency(monthlyEarnings)}</strong>
+      <header style={{ display: "grid", gap: 12 }}>
+        <strong style={{ fontSize: 18 }}>Clientes</strong>
+        <div style={clientSummaryGridStyle}>
+          <div style={summaryTileAccentStyle}>
+            <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.accent[0] }}>Ganancia mensual</span>
+            <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.accent[1] }}>{formatCurrency(monthlyEarnings)}</strong>
           </div>
-          <div style={monthlyEarningsStyle}>
-            <span style={monthlyEarningsLabelStyle}>Equipos por cobrar</span>
-            <strong style={monthlyEarningsValueStyle}>{formatCurrency(equipmentPending)}</strong>
+          <div style={summaryTileAltStyle}>
+            <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos por cobrar</span>
+            <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentPending)}</strong>
           </div>
-          <div style={remainingWrapperStyle}>
-            <button type="button" onClick={() => setIsRemainingOpen((current) => !current)} style={{ ...remainingThisMonthStyle, cursor: "pointer", font: "inherit" }} aria-expanded={isRemainingOpen}>
-              <span style={remainingThisMonthLabelStyle}>Resta este mes {isRemainingOpen ? "▴" : "▾"}</span>
-              <strong style={remainingThisMonthValueStyle}>{formatCurrency(remainingThisMonth)}</strong>
+          <div style={{ ...remainingWrapperStyle, gridColumn: "1 / -1" }}>
+            <button
+              type="button"
+              onClick={() => setIsRemainingOpen((current) => !current)}
+              style={{ ...summaryTileWarningStyle, width: "100%", boxSizing: "border-box", cursor: "pointer" }}
+              aria-expanded={isRemainingOpen}
+            >
+              <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.warning[0] }}>Resta este mes {isRemainingOpen ? "▴" : "▾"}</span>
+              <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.warning[1] }}>{formatCurrency(remainingThisMonth)}</strong>
             </button>
             {isRemainingOpen ? (
-              <div style={remainingListStyle}>
+              <div style={{ ...remainingListStyle, left: 0, right: 0, maxWidth: "none" }}>
                 {pendingClients.length === 0 ? (
                   <span style={columnCaptionStyle}>No queda nadie por cobrar este mes.</span>
                 ) : (
@@ -242,16 +247,13 @@ export function ScrumClientsView({
         </div>
       </header>
 
-      <section style={panelStyle}>
-        <div style={collapsibleFormHeaderStyle}>
-          <strong style={{ fontSize: 15 }}>Nuevo cliente</strong>
-          <button type="button" onClick={() => setIsFormOpen((current) => !current)} style={isFormOpen ? ghostButtonStyle : secondaryButtonStyle}>
-            {isFormOpen ? "Cancelar" : "+ Agregar"}
-          </button>
-        </div>
+      <section style={{ display: "grid", gap: 10 }}>
+        <button type="button" onClick={() => setIsFormOpen((current) => !current)} style={isFormOpen ? { ...clientNewButtonStyle, borderStyle: "solid", color: "#9aa3c0", borderColor: "#323a5c" } : clientNewButtonStyle}>
+          {isFormOpen ? "Cancelar" : "+ Nuevo cliente"}
+        </button>
 
         {isFormOpen ? (
-          <form onSubmit={handleSubmit} style={clientFormGridStyle}>
+          <form onSubmit={handleSubmit} style={{ ...clientFormGridStyle, ...clientNewFormPanelStyle }}>
             <div style={fieldGroupStyle}>
               <label style={labelStyle} htmlFor="client-name">
                 Nombre
@@ -342,73 +344,79 @@ export function ScrumClientsView({
           const alertStyle = CLIENT_ALERT_STYLES[alertState];
           const expanded = expandedClientId === client.id;
 
+          const equipment = client.equipment;
+          const equipmentPendingHere = equipment && equipment.remaining > 0 ? equipment.remaining : 0;
+          const debtPendingHere = client.debtRemaining && client.debtRemaining > 0 ? client.debtRemaining : 0;
+
           return (
-            <article key={client.id} style={clientCardStyle}>
-              <button type="button" onClick={() => setExpandedClientId(expanded ? null : client.id)} style={clientRowButtonStyle}>
-                <div style={{ display: "grid", gap: 4 }}>
-                  <strong style={{ fontSize: 15, fontWeight: 700 }}>{client.name}</strong>
+            <article key={client.id} style={clientCardAccentStyle(alertStyle.color)}>
+              <button type="button" onClick={() => setExpandedClientId(expanded ? null : client.id)} style={clientRowButtonStyle} aria-expanded={expanded}>
+                <div style={clientHeaderTextStyle}>
+                  <strong style={clientNameStyle}>{client.name}</strong>
                   {/* Dias hasta el proximo pago, visible sin desplegar (pedido explicito, 22/10/2026). */}
-                  <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
-                    {getClientRelativeLabel(client.nextPaymentAt, now)}
+                  <span style={{ fontSize: 12, fontWeight: 700, color: alertStyle.color }}>{getClientRelativeLabel(client.nextPaymentAt, now)}</span>
+                </div>
+                <div style={clientHeaderAmountStyle}>
+                  <span style={clientAmountStyle}>{formatCurrency(client.amount)}</span>
+                  <span style={metaChipStyle}>
+                    {client.frequency === "monthly" ? "por mes" : "cada 6 meses"} {expanded ? "▴" : "▾"}
                   </span>
                 </div>
-                <span
-                  style={{
-                    ...clientStatusBadgeStyle,
-                    background: alertStyle.background,
-                    color: alertStyle.color
-                  }}
-                >
-                  <span style={{ ...difficultyDotStyle(alertStyle.color), marginRight: 6 }} />
-                  {alertStyle.label}
-                </span>
               </button>
+
+              {equipmentPendingHere > 0 || debtPendingHere > 0 ? (
+                <div style={clientChipsRowStyle}>
+                  {equipmentPendingHere > 0 ? (
+                    <span style={clientChipStyle("#c4b5fd", "rgba(167, 139, 250, 0.14)")}>Equipo: faltan {formatCurrency(equipmentPendingHere)}</span>
+                  ) : null}
+                  {debtPendingHere > 0 ? (
+                    <span style={clientChipStyle("#fcd34d", "rgba(251, 191, 36, 0.14)")}>Deuda: {formatCurrency(debtPendingHere)}</span>
+                  ) : null}
+                </div>
+              ) : null}
 
               {expanded ? (
                 <div style={clientDetailsStyle}>
-                  <div style={clientMetaGridStyle}>
-                    <span style={clientPrimaryValueStyle}>{formatCurrency(client.amount)}</span>
-                    <span style={metaChipStyle}>{BILLING_FREQUENCY_LABELS[client.frequency]}</span>
+                  <div style={clientFactsGridStyle}>
+                    <div style={clientFactStyle}>
+                      <span style={clientFactLabelStyle}>Próximo pago</span>
+                      <span style={clientFactValueStyle}>{formatDate(client.nextPaymentAt)}</span>
+                    </div>
+                    <div style={clientFactStyle}>
+                      <span style={clientFactLabelStyle}>Frecuencia</span>
+                      <span style={clientFactValueStyle}>{BILLING_FREQUENCY_LABELS[client.frequency]}</span>
+                    </div>
                   </div>
 
-                  <div style={clientFooterStyle}>
-                    <span style={metaChipStyle}>Proximo pago: {formatDate(client.nextPaymentAt)}</span>
-                    <span style={{ ...metaChipStyle, color: alertStyle.color, fontWeight: 700 }}>
-                      {getClientRelativeLabel(client.nextPaymentAt, now)}
-                    </span>
+                  <div style={clientMainActionsStyle}>
+                    <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={{ ...primaryButtonStyle, flex: 1 }}>
+                      Registrar pago
+                    </button>
+                    <button type="button" onClick={() => onOpenEditClient(client)} style={secondaryButtonStyle}>
+                      Editar
+                    </button>
                   </div>
 
                   <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
 
                   <ClientEquipmentPanel client={client} onClientChanged={onClientChanged} />
 
-                  <div style={clientActionsStyle}>
-                    <button type="button" onClick={() => onOpenEditClient(client)} style={secondaryButtonStyle}>
-                      Editar
-                    </button>
-                    <button type="button" onClick={() => onRegisterClientPayment(client.id)} style={secondaryButtonStyle}>
-                      Registrar pago
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setClientToDelete(client)}
-                      style={deleteButtonStyle}
-                    >
-                      Eliminar cliente
-                    </button>
-                    {clientToDelete?.id === client.id ? (
-                      <ScrumConfirmModal
-                        title="¿Seguro que querés eliminar este cliente?"
-                        message={`"${client.name}" se borra junto con todo su historial de pagos y de montos. No se puede deshacer.`}
-                        confirmLabel="Sí, eliminar"
-                        onCancel={() => setClientToDelete(null)}
-                        onConfirm={() => {
-                          setClientToDelete(null);
-                          onDeleteClient(client.id);
-                        }}
-                      />
-                    ) : null}
-                  </div>
+
+                  <button type="button" onClick={() => setClientToDelete(client)} style={clientDeleteLinkStyle}>
+                    Eliminar cliente
+                  </button>
+                  {clientToDelete?.id === client.id ? (
+                    <ScrumConfirmModal
+                      title="¿Seguro que querés eliminar este cliente?"
+                      message={`"${client.name}" se borra junto con todo su historial de pagos y de montos. No se puede deshacer.`}
+                      confirmLabel="Sí, eliminar"
+                      onCancel={() => setClientToDelete(null)}
+                      onConfirm={() => {
+                        setClientToDelete(null);
+                        onDeleteClient(client.id);
+                      }}
+                    />
+                  ) : null}
                 </div>
               ) : null}
             </article>

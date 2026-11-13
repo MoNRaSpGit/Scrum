@@ -109,10 +109,10 @@ export function ClientEquipmentPanel({ client, onClientChanged }: { client: Clie
 
   return (
     <div style={debtPanelStyle}>
-      <div style={debtSummaryRowStyle}>
-        <span style={metaChipStyle}>
-          Materiales: {settled ? "saldados" : `faltan ${formatCurrency(equipment.remaining)} de ${formatCurrency(equipment.total)}`}
-        </span>
+      <div style={{ display: "grid", gap: 2 }}>
+        <strong style={{ fontSize: 13 }}>
+          Materiales · {settled ? "saldados" : `faltan ${formatCurrency(equipment.remaining)} de ${formatCurrency(equipment.total)}`}
+        </strong>
         <span style={metaChipStyle}>
           {formatCurrency(equipment.installmentAmount)} x {equipment.months} meses
           {settled ? "" : ` · quedan ~${equipment.installmentsLeft} cuotas`}
