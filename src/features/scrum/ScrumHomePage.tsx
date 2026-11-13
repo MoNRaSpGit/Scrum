@@ -281,16 +281,12 @@ export function ScrumHomePage() {
         }
       }
 
-      // Plazo y color pueden cambiar juntos: se guardan los dos (antes, si
-      // cambiaba el plazo, el color se perdia).
+      // Plazo y color pueden cambiar juntos: se guardan los dos.
       let response: { ok: boolean; item: ScrumTask } | null = null;
       if (durationChanged) {
         response = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/duration`, {
           method: "PATCH",
-          body: JSON.stringify({
-            durationUnit: editingDurationUnit,
-            durationValue: Math.round(parsedDurationValue)
-          })
+          body: JSON.stringify({ durationUnit: editingDurationUnit, durationValue: Math.round(parsedDurationValue) })
         });
       }
       if (difficultyChanged) {
@@ -303,98 +299,7 @@ export function ScrumHomePage() {
         return;
       }
       const savedItem = response.item;
-
       setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? savedItem : task)));
-      if (direction === "backward") {
-        toast.success(nextTask.status === "todo" ? "Tarea devuelta a pendientes." : "Tarea devuelta a realizando.");
-      } else {
-        toast.success(nextTask.status === "in_progress" ? "Tarea movida a realizando." : "Tarea movida a finalizadas.");
-      }
-    } catch {
-      toast.error("No se pudo actualizar la tarea.");
-    }
-  }
-
-  async function handleDeleteTask(taskId: number) {
-    try {
-      await requestJson<{ ok: boolean }>(`/scrum/tasks/${taskId}`, { method: "DELETE" });
-      setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
-      // Bug 15/10/2026: el modal de "Editar plazo" de la tarea borrada
-      // quedaba abierto y habia que tocar Cerrar a mano.
-      setEditingTaskId((currentId) => (currentId === taskId ? null : currentId));
-      toast.success("Tarea eliminada.");
-    } catch {
-      toast.error("No se pudo borrar la tarea.");
-    }
-  }
-
-  async function handleUpdateTaskDuration(taskId: number) {
-    const currentTask = tasks.find((task) => task.id === taskId);
-    if (!currentTask) {
-      return;
-    }
-
-    const parsedDurationValue = Number(editingDurationValue);
-    const durationChanged = editingDurationUnit !== currentTask.durationUnit || Math.round(parsedDurationValue) !== currentTask.durationValue;
-    const difficultyChanged = editingDifficulty !== currentTask.difficulty;
-
-    const descriptionChanged =
-      editingDescription.trim() !== (currentTask.description ?? "").trim() || editingTitle.trim() !== currentTask.title.trim();
-    if (!editingTitle.trim()) {
-      toast.error("El nombre de la tarea no puede quedar vacío.");
-      return;
-    }
-
-    if (!durationChanged && !difficultyChanged && !descriptionChanged) {
-      setEditingTaskId(null);
-      return;
-    }
-
-    try {
-      if (durationChanged) {
-        if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
-          toast.error("El plazo tiene que ser mayor a 0.");
-          return;
-        }
-        if (editingDurationUnit === "days" && parsedDurationValue > 6) {
-          toast.error("Si usas dias, la cantidad maxima es 6.");
-          return;
-        }
-        if (editingDurationUnit === "weeks" && parsedDurationValue > 4) {
-          toast.error("Si usas semanas, la cantidad maxima es 4.");
-          return;
-        }
-      }
-
-      if (descriptionChanged) {
-        const descriptionResponse = await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/description`, {
-          method: "PATCH",
-          body: JSON.stringify({ title: editingTitle.trim(), description: editingDescription.trim() })
-        });
-        setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? descriptionResponse.item : task)));
-        if (!durationChanged && !difficultyChanged) {
-          setEditingTaskId(null);
-          toast.success("Tarea actualizada.");
-          return;
-        }
-      }
-
-      const response = durationChanged
-        ? await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/duration`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              durationUnit: editingDurationUnit,
-              durationValue: Math.round(parsedDurationValue)
-            })
-          })
-        : await requestJson<{ ok: boolean; item: ScrumTask }>(`/scrum/tasks/${taskId}/difficulty`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              difficulty: editingDifficulty
-            })
-          });
-
-      setTasks((currentTasks) => currentTasks.map((task) => (task.id === taskId ? response.item : task)));
       setEditingTaskId(null);
       toast.success("Tarea actualizada.");
     } catch {
