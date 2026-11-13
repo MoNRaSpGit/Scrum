@@ -19,6 +19,8 @@ import { ScrumConfirmModal } from "./ScrumConfirmModal";
 type ScrumDurationModalProps = {
   editingDifficulty: TaskDifficulty;
   editingDescription: string;
+  editingTitle: string;
+  setEditingTitle: Dispatch<SetStateAction<string>>;
   setEditingDescription: Dispatch<SetStateAction<string>>;
   editingDurationUnit: TaskDurationUnit;
   editingDurationValue: string;
@@ -36,6 +38,8 @@ type ScrumDurationModalProps = {
 export function ScrumDurationModal({
   editingDifficulty,
   editingDescription,
+  editingTitle,
+  setEditingTitle,
   setEditingDescription,
   editingDurationUnit,
   editingDurationValue,
@@ -62,6 +66,19 @@ export function ScrumDurationModal({
           <button type="button" onClick={onClose} style={modalCloseButtonStyle}>
             Cerrar
           </button>
+        </div>
+
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle} htmlFor="task-edit-title">
+            Nombre
+          </label>
+          <input
+            id="task-edit-title"
+            value={editingTitle}
+            onChange={(event) => setEditingTitle(event.target.value)}
+            maxLength={180}
+            style={inputStyle}
+          />
         </div>
 
         <div style={fieldGroupStyle}>
