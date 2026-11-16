@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { requestJson } from "../scrum.api";
-import { debtPanelStyle, inputStyle, labelStyle, metaChipStyle, secondaryButtonStyle } from "../scrum.styles";
+import { debtPanelStyle, metaChipStyle, secondaryButtonStyle } from "../scrum.styles";
 import { shareReceipt } from "../scrumReceipt";
 import type { ClientBilling } from "../scrum.types";
 import { formatCurrency, formatDate, formatDateTime } from "../scrum.utils";
@@ -14,20 +14,6 @@ type ClientNotice = {
   activatedAt: string | null;
   lastSeenAt: string | null;
 };
-type NoticeTarget = { appKey: NoticeAppKey; username: string; fullName: string | null };
-
-const APP_LABELS: Record<NoticeAppKey, string> = { gym: "Gimnasio", distribuidora: "Distribuidora", eme: "Eme", gaby: "Gaby", joker: "Joker" };
-// Todas menos el gimnasio avisan a toda la app (no hay a quien elegir); el
-// gimnasio se elige por gimnasio y lo ven todos sus usuarios.
-const APP_WIDE_USER = "_app";
-const APP_WIDE_APPS: NoticeAppKey[] = ["distribuidora", "eme", "gaby", "joker"];
-const APP_WIDE_HINTS: Partial<Record<NoticeAppKey, string>> = {
-  distribuidora: "El aviso lo ve solo el administrador de la distribuidora.",
-  joker: "El aviso lo ve solo el administrador de Joker.",
-  eme: "Esta app no tiene login: el aviso le sale a quien la abra.",
-  gaby: "Esta app no tiene login: el aviso le sale a quien la abra."
-};
-
 // Avisos de demora y recibo por WhatsApp de un cliente (11/11/2026, pedido
 // explicito):
 // - "Aviso de demora": vincula al cliente con su usuario en la app y activa
@@ -65,23 +51,17 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
   const isOverdue = daysLeft < 0;
   const canRemind = !isOverdue && daysLeft <= REMINDER_DAYS_BEFORE;
   const [notice, setNotice] = useState<ClientNotice | null>(null);
-  const [targets, setTargets] = useState<NoticeTarget[]>([]);
-  const [appKey, setAppKey] = useState<NoticeAppKey>("gym");
-  const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [receiptMessage, setReceiptMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    requestJson<{ notices: ClientNotice[]; targets: NoticeTarget[] }>("/scrum/notices")
+    requestJson<{ notices: ClientNotice[] }>("/scrum/notices")
       .then((data) => {
         if (cancelled) return;
         const mine = data.notices.find((entry) => entry.clientId === client.id) ?? null;
         setNotice(mine);
-        setTargets(data.targets);
-        setAppKey(mine?.appKey ?? "gym");
-        setUsername(mine?.appUsername ?? "");
       })
       .catch(() => {
         if (!cancelled) setMessage("No se pudo cargar el aviso.");
@@ -91,17 +71,17 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
     };
   }, [client.id]);
 
-  async function setActive(active: boolean) {
-    if (!username) {
-      setMessage("Elegí primero el usuario de la app.");
-      return;
-    }
+  // (16/11/2026) Ya no se elige app ni usuario a mano: este panel es del
+  // cliente abierto. Solo queda poder apagar un aviso en-app que ya estuviera
+  // activo (el backend y los datos no se tocaron).
+  async function deactivate() {
+    if (!notice) return;
     setBusy(true);
     setMessage("");
     try {
       const saved = await requestJson<ClientNotice>(`/scrum/clients/${client.id}/notice`, {
         method: "PUT",
-        body: JSON.stringify({ appKey, appUsername: username, active })
+        body: JSON.stringify({ appKey: notice.appKey, appUsername: notice.appUsername, active: false })
       });
       setNotice(saved);
     } catch {
@@ -148,74 +128,22 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
         ) : null}
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
-        <strong style={{ fontSize: 14 }}>Aviso de demora en la app</strong>
-        <label style={labelStyle} htmlFor={`notice-app-${client.id}`}>
-          App del cliente
-        </label>
-        <select
-          id={`notice-app-${client.id}`}
-          value={appKey}
-          onChange={(event) => {
-            const next = event.target.value as NoticeAppKey;
-            setAppKey(next);
-            setUsername(APP_WIDE_APPS.includes(next) ? APP_WIDE_USER : "");
-          }}
-          disabled={busy || active}
-          style={inputStyle}
-        >
-          {(Object.keys(APP_LABELS) as NoticeAppKey[]).map((key) => (
-            <option key={key} value={key}>
-              {APP_LABELS[key]}
-            </option>
-          ))}
-        </select>
-        {APP_WIDE_APPS.includes(appKey) ? (
-          <span style={metaChipStyle}>{APP_WIDE_HINTS[appKey]}</span>
-        ) : (
-          <>
-            <label style={labelStyle} htmlFor={`notice-user-${client.id}`}>
-              Gimnasio (el aviso lo ven todos sus usuarios)
-            </label>
-            <select
-              id={`notice-user-${client.id}`}
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              disabled={busy || active}
-              style={inputStyle}
-            >
-              <option value="">Elegir usuario…</option>
-              {targets
-                .filter((target) => target.appKey === appKey)
-                .map((target) => (
-                  <option key={`${target.appKey}-${target.username}`} value={target.username}>
-                    {target.username}
-                    {target.fullName ? ` (${target.fullName})` : ""}
-                  </option>
-                ))}
-            </select>
-          </>
-        )}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          {active ? (
-            <button type="button" onClick={() => void setActive(false)} disabled={busy} style={secondaryButtonStyle}>
+      {active ? (
+        <div style={{ display: "grid", gap: 8 }}>
+          <strong style={{ fontSize: 14 }}>Aviso de demora en la app</strong>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button type="button" onClick={() => void deactivate()} disabled={busy} style={secondaryButtonStyle}>
               Desactivar aviso
             </button>
-          ) : (
-            <button type="button" onClick={() => void setActive(true)} disabled={busy || !username} style={secondaryButtonStyle}>
-              Activar aviso de demora
-            </button>
-          )}
-          {active ? <span style={{ ...metaChipStyle, fontWeight: 700 }}>Activo</span> : null}
-        </div>
-        {active && notice?.activatedAt ? <span style={metaChipStyle}>Activado: {formatDateTime(notice.activatedAt)}</span> : null}
-        {active ? (
+            <span style={{ ...metaChipStyle, fontWeight: 700 }}>Activo</span>
+          </div>
+          {notice?.activatedAt ? <span style={metaChipStyle}>Activado: {formatDateTime(notice.activatedAt)}</span> : null}
           <span style={metaChipStyle}>
             {notice?.lastSeenAt ? `Lo vio: ${formatDateTime(notice.lastSeenAt)}` : "Todavía no entró a la app desde que se activó."}
           </span>
-        ) : null}
-        {message ? <span style={{ ...metaChipStyle, fontWeight: 700 }}>{message}</span> : null}
-      </div>
+          {message ? <span style={{ ...metaChipStyle, fontWeight: 700 }}>{message}</span> : null}
+        </div>
+      ) : null}
 
       {client.whatsapp ? (
       <div style={{ display: "grid", gap: 8 }}>
