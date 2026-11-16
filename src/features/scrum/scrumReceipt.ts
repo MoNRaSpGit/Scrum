@@ -30,27 +30,6 @@ function conceptLabel(client: ClientBilling) {
   return client.frequency === "semiannual" ? "Servicio (pago semestral)" : "Servicio mensual";
 }
 
-// Mes y año del pago, en Montevideo (ej. "noviembre de 2026").
-function paidMonthLabel() {
-  return new Intl.DateTimeFormat("es-UY", { timeZone: "America/Montevideo", month: "long", year: "numeric" }).format(new Date());
-}
-
-// (16/11/2026) Mensaje que acompaña al recibo: formal y con una mini
-// descripcion de lo que se pago.
-export function receiptText(client: ClientBilling) {
-  const paid =
-    client.frequency === "semiannual"
-      ? `el pago semestral de su servicio (${paidMonthLabel()})`
-      : `el mes de ${paidMonthLabel()} de su servicio`;
-  return `Estimado/a ${client.name}, confirmamos que ha abonado ${paid}, por un importe de ${formatCurrency(client.amount)}. Su próximo vencimiento es el ${formatDate(client.nextPaymentAt)}. Gracias por confiar en Logic Lab.`;
-}
-
-// Solo el mensaje, directo al chat de ESTE cliente (sin imagen ni menu de
-// compartir).
-export function sendReceiptText(client: ClientBilling) {
-  window.open(`https://wa.me/${client.whatsapp ?? ""}?text=${encodeURIComponent(receiptText(client))}`, "_blank", "noopener");
-}
-
 export async function drawReceipt(client: ClientBilling): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
@@ -139,11 +118,10 @@ export async function shareReceipt(client: ClientBilling): Promise<ReceiptResult
   const blob = await drawReceipt(client);
   const fileName = `recibo-${client.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "cliente"}.png`;
   const file = new File([blob], fileName, { type: "image/png" });
-  const text = receiptText(client);
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], text });
+      await navigator.share({ files: [file] });
       return "shared";
     } catch (error) {
       // Cerrar el menu de compartir no es un error.
@@ -152,13 +130,13 @@ export async function shareReceipt(client: ClientBilling): Promise<ReceiptResult
   }
 
   // Sin compartir archivos (PC): se baja la imagen y se abre WhatsApp con
-  // el texto; la imagen se adjunta a mano.
+  // el chat del cliente; la imagen se adjunta a mano.
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-  window.open(`https://wa.me/${client.whatsapp ?? ""}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+  window.open(`https://wa.me/${client.whatsapp ?? ""}`, "_blank", "noopener");
   return "downloaded";
 }

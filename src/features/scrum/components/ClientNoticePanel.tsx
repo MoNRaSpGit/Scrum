@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { requestJson } from "../scrum.api";
 import { debtPanelStyle, metaChipStyle, secondaryButtonStyle } from "../scrum.styles";
-import { sendReceiptText, shareReceipt } from "../scrumReceipt";
+import { shareReceipt } from "../scrumReceipt";
 import type { ClientBilling } from "../scrum.types";
 import { formatCurrency, formatDate, formatDateTime } from "../scrum.utils";
 
@@ -149,16 +149,10 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
       <div style={{ display: "grid", gap: 8 }}>
         <strong style={{ fontSize: 14 }}>Recibo</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" onClick={() => sendReceiptText(client)} style={secondaryButtonStyle}>
-            Recibo por WhatsApp a {client.name}
-          </button>
           <button type="button" onClick={() => void sendReceipt()} style={secondaryButtonStyle}>
-            Recibo con imagen (logo)
+            Recibo por WhatsApp
           </button>
         </div>
-        <span style={metaChipStyle}>
-          El primero abre el chat de {client.name} con el mensaje. El segundo arma la imagen con el logo y abre el menú de compartir del celular: ahí elegís WhatsApp y a {client.name}.
-        </span>
         {receiptMessage ? <span style={metaChipStyle}>{receiptMessage}</span> : null}
       </div>
       ) : null}
