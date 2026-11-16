@@ -142,6 +142,6 @@ export async function shareReceipt(client: ClientBilling): Promise<ReceiptResult
   link.download = fileName;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+  window.open(`https://wa.me/${client.whatsapp ?? ""}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   return "downloaded";
 }

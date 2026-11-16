@@ -18,6 +18,7 @@ type ScrumClientEditModalProps = {
   editingClientName: string;
   editingClientFrequency: BillingFrequency;
   editingClientNextPaymentAt: string;
+  editingClientWhatsapp: string;
   editingClientAmountDelta: string;
   editingClientAmountDeltaDescription: string;
   isSaving: boolean;
@@ -28,6 +29,7 @@ type ScrumClientEditModalProps = {
   setEditingClientName: Dispatch<SetStateAction<string>>;
   setEditingClientFrequency: Dispatch<SetStateAction<BillingFrequency>>;
   setEditingClientNextPaymentAt: Dispatch<SetStateAction<string>>;
+  setEditingClientWhatsapp: Dispatch<SetStateAction<string>>;
   setEditingClientAmountDelta: Dispatch<SetStateAction<string>>;
   setEditingClientAmountDeltaDescription: Dispatch<SetStateAction<string>>;
 };
@@ -44,6 +46,7 @@ export function ScrumClientEditModal({
   editingClientName,
   editingClientFrequency,
   editingClientNextPaymentAt,
+  editingClientWhatsapp,
   editingClientAmountDelta,
   editingClientAmountDeltaDescription,
   isSaving,
@@ -54,6 +57,7 @@ export function ScrumClientEditModal({
   setEditingClientName,
   setEditingClientFrequency,
   setEditingClientNextPaymentAt,
+  setEditingClientWhatsapp,
   setEditingClientAmountDelta,
   setEditingClientAmountDeltaDescription
 }: ScrumClientEditModalProps) {
@@ -116,6 +120,21 @@ export function ScrumClientEditModal({
             type="date"
             value={editingClientNextPaymentAt}
             onChange={(event) => setEditingClientNextPaymentAt(event.target.value)}
+            style={compactInputStyle}
+          />
+        </div>
+
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle} htmlFor="edit-client-whatsapp">
+            WhatsApp (opcional)
+          </label>
+          <input
+            id="edit-client-whatsapp"
+            type="tel"
+            inputMode="tel"
+            value={editingClientWhatsapp}
+            onChange={(event) => setEditingClientWhatsapp(event.target.value)}
+            placeholder="099 123 456"
             style={compactInputStyle}
           />
         </div>

@@ -5,17 +5,28 @@ import { shareReceipt } from "../scrumReceipt";
 import type { ClientBilling } from "../scrum.types";
 import { formatCurrency, formatDate, formatDateTime } from "../scrum.utils";
 
+type NoticeAppKey = "gym" | "distribuidora" | "eme" | "gaby" | "joker";
 type ClientNotice = {
   clientId: number;
-  appKey: "gym";
+  appKey: NoticeAppKey;
   appUsername: string;
   active: boolean;
   activatedAt: string | null;
   lastSeenAt: string | null;
 };
-type NoticeTarget = { appKey: "gym"; username: string; fullName: string | null };
+type NoticeTarget = { appKey: NoticeAppKey; username: string; fullName: string | null };
 
-const APP_LABELS: Record<string, string> = { gym: "Gimnasio" };
+const APP_LABELS: Record<NoticeAppKey, string> = { gym: "Gimnasio", distribuidora: "Distribuidora", eme: "Eme", gaby: "Gaby", joker: "Joker" };
+// Todas menos el gimnasio avisan a toda la app (no hay a quien elegir); el
+// gimnasio se elige por gimnasio y lo ven todos sus usuarios.
+const APP_WIDE_USER = "_app";
+const APP_WIDE_APPS: NoticeAppKey[] = ["distribuidora", "eme", "gaby", "joker"];
+const APP_WIDE_HINTS: Partial<Record<NoticeAppKey, string>> = {
+  distribuidora: "El aviso lo ve solo el administrador de la distribuidora.",
+  joker: "El aviso lo ve solo el administrador de Joker.",
+  eme: "Esta app no tiene login: el aviso le sale a quien la abra.",
+  gaby: "Esta app no tiene login: el aviso le sale a quien la abra."
+};
 
 // Avisos de demora y recibo por WhatsApp de un cliente (11/11/2026, pedido
 // explicito):
@@ -44,10 +55,9 @@ function overdueText(client: ClientBilling, daysLate: number) {
   return `Estimado/a ${client.name}, según nuestro registro su cuota de ${formatCurrency(client.amount)} venció ${ago} (${formatDate(client.nextPaymentAt)}). Si ya la abonó, avísenos y le enviamos el comprobante; si necesita ayuda, escríbanos. Gracias. — Logic Lab`;
 }
 
-function openWhatsApp(text: string) {
-  // Sin numero: WhatsApp deja elegir el contacto (los clientes no tienen
-  // telefono guardado en Scrum).
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+function openWhatsApp(client: ClientBilling, text: string) {
+  // Al WhatsApp cargado del cliente (los botones solo salen si lo tiene).
+  window.open(`https://wa.me/${client.whatsapp ?? ""}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
 }
 
 export function ClientNoticePanel({ client, now }: { client: ClientBilling; now: number }) {
@@ -56,6 +66,7 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
   const canRemind = !isOverdue && daysLeft <= REMINDER_DAYS_BEFORE;
   const [notice, setNotice] = useState<ClientNotice | null>(null);
   const [targets, setTargets] = useState<NoticeTarget[]>([]);
+  const [appKey, setAppKey] = useState<NoticeAppKey>("gym");
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -69,6 +80,7 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
         const mine = data.notices.find((entry) => entry.clientId === client.id) ?? null;
         setNotice(mine);
         setTargets(data.targets);
+        setAppKey(mine?.appKey ?? "gym");
         setUsername(mine?.appUsername ?? "");
       })
       .catch(() => {
@@ -89,7 +101,7 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
     try {
       const saved = await requestJson<ClientNotice>(`/scrum/clients/${client.id}/notice`, {
         method: "PUT",
-        body: JSON.stringify({ appKey: "gym", appUsername: username, active })
+        body: JSON.stringify({ appKey, appUsername: username, active })
       });
       setNotice(saved);
     } catch {
@@ -115,45 +127,75 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
     <div style={debtPanelStyle}>
       <div style={{ display: "grid", gap: 8 }}>
         <strong style={{ fontSize: 14 }}>Aviso por WhatsApp</strong>
-        {isOverdue ? (
-          <button type="button" onClick={() => openWhatsApp(overdueText(client, Math.abs(daysLeft)))} style={secondaryButtonStyle}>
+        {!client.whatsapp ? (
+          <span style={metaChipStyle}>Cargale el WhatsApp a este cliente (botón Editar) para habilitar los avisos y el recibo.</span>
+        ) : isOverdue ? (
+          <button type="button" onClick={() => openWhatsApp(client, overdueText(client, Math.abs(daysLeft)))} style={secondaryButtonStyle}>
             Avisar retraso (venció hace {Math.abs(daysLeft)} {Math.abs(daysLeft) === 1 ? "día" : "días"})
           </button>
         ) : (
           <button
             type="button"
-            onClick={() => openWhatsApp(reminderText(client, daysLeft))}
+            onClick={() => openWhatsApp(client, reminderText(client, daysLeft))}
             disabled={!canRemind}
             style={{ ...secondaryButtonStyle, opacity: canRemind ? 1 : 0.5, cursor: canRemind ? "pointer" : "not-allowed" }}
           >
             Recordar vencimiento
           </button>
         )}
-        {!isOverdue && !canRemind ? (
+        {client.whatsapp && !isOverdue && !canRemind ? (
           <span style={metaChipStyle}>Se activa cuando falten {REMINDER_DAYS_BEFORE} días o menos (faltan {daysLeft}).</span>
         ) : null}
       </div>
 
       <div style={{ display: "grid", gap: 8 }}>
         <strong style={{ fontSize: 14 }}>Aviso de demora en la app</strong>
-        <label style={labelStyle} htmlFor={`notice-user-${client.id}`}>
-          Usuario en la app ({APP_LABELS.gym})
+        <label style={labelStyle} htmlFor={`notice-app-${client.id}`}>
+          App del cliente
         </label>
         <select
-          id={`notice-user-${client.id}`}
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
+          id={`notice-app-${client.id}`}
+          value={appKey}
+          onChange={(event) => {
+            const next = event.target.value as NoticeAppKey;
+            setAppKey(next);
+            setUsername(APP_WIDE_APPS.includes(next) ? APP_WIDE_USER : "");
+          }}
           disabled={busy || active}
           style={inputStyle}
         >
-          <option value="">Elegir usuario…</option>
-          {targets.map((target) => (
-            <option key={`${target.appKey}-${target.username}`} value={target.username}>
-              {target.username}
-              {target.fullName ? ` (${target.fullName})` : ""}
+          {(Object.keys(APP_LABELS) as NoticeAppKey[]).map((key) => (
+            <option key={key} value={key}>
+              {APP_LABELS[key]}
             </option>
           ))}
         </select>
+        {APP_WIDE_APPS.includes(appKey) ? (
+          <span style={metaChipStyle}>{APP_WIDE_HINTS[appKey]}</span>
+        ) : (
+          <>
+            <label style={labelStyle} htmlFor={`notice-user-${client.id}`}>
+              Gimnasio (el aviso lo ven todos sus usuarios)
+            </label>
+            <select
+              id={`notice-user-${client.id}`}
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              disabled={busy || active}
+              style={inputStyle}
+            >
+              <option value="">Elegir usuario…</option>
+              {targets
+                .filter((target) => target.appKey === appKey)
+                .map((target) => (
+                  <option key={`${target.appKey}-${target.username}`} value={target.username}>
+                    {target.username}
+                    {target.fullName ? ` (${target.fullName})` : ""}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {active ? (
             <button type="button" onClick={() => void setActive(false)} disabled={busy} style={secondaryButtonStyle}>
@@ -175,6 +217,7 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
         {message ? <span style={{ ...metaChipStyle, fontWeight: 700 }}>{message}</span> : null}
       </div>
 
+      {client.whatsapp ? (
       <div style={{ display: "grid", gap: 8 }}>
         <strong style={{ fontSize: 14 }}>Recibo</strong>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -184,6 +227,7 @@ export function ClientNoticePanel({ client, now }: { client: ClientBilling; now:
         </div>
         {receiptMessage ? <span style={metaChipStyle}>{receiptMessage}</span> : null}
       </div>
+      ) : null}
     </div>
   );
 }

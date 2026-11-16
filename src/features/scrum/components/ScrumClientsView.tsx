@@ -70,6 +70,8 @@ type ScrumClientsViewProps = {
   clientFrequency: BillingFrequency;
   clientName: string;
   clientNextPaymentAt: string;
+  clientWhatsapp: string;
+  setClientWhatsapp: Dispatch<SetStateAction<string>>;
   clients: ClientBilling[];
   expandedClientId: number | null;
   now: number;
@@ -172,6 +174,8 @@ export function ScrumClientsView({
   clientFrequency,
   clientName,
   clientNextPaymentAt,
+  clientWhatsapp,
+  setClientWhatsapp,
   clients,
   expandedClientId,
   now,
@@ -426,6 +430,21 @@ export function ScrumClientsView({
                 value={clientDebtAmount}
                 onChange={(event) => setClientDebtAmount(event.target.value)}
                 placeholder="Ej: 4000"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle} htmlFor="client-whatsapp">
+                WhatsApp (opcional)
+              </label>
+              <input
+                id="client-whatsapp"
+                type="tel"
+                inputMode="tel"
+                value={clientWhatsapp}
+                onChange={(event) => setClientWhatsapp(event.target.value)}
+                placeholder="099 123 456"
                 style={inputStyle}
               />
             </div>

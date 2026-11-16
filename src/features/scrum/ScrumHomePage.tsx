@@ -65,6 +65,8 @@ export function ScrumHomePage() {
   const [editingClientName, setEditingClientName] = useState("");
   const [editingClientFrequency, setEditingClientFrequency] = useState<BillingFrequency>("monthly");
   const [editingClientNextPaymentAt, setEditingClientNextPaymentAt] = useState("");
+  const [editingClientWhatsapp, setEditingClientWhatsapp] = useState("");
+  const [clientWhatsapp, setClientWhatsapp] = useState("");
   const [editingClientAmountDelta, setEditingClientAmountDelta] = useState("");
   const [editingClientAmountDeltaDescription, setEditingClientAmountDeltaDescription] = useState("");
   const [isSavingClientEdit, setIsSavingClientEdit] = useState(false);
@@ -370,7 +372,8 @@ export function ScrumHomePage() {
           amount: Math.round(parsedAmount),
           frequency: clientFrequency,
           nextPaymentAt: clientNextPaymentAt,
-          debtAmount: parsedDebtAmount !== null ? Math.round(parsedDebtAmount) : undefined
+          debtAmount: parsedDebtAmount !== null ? Math.round(parsedDebtAmount) : undefined,
+          whatsapp: clientWhatsapp.trim() || undefined
         })
       });
 
@@ -379,6 +382,7 @@ export function ScrumHomePage() {
       setClientName("");
       setClientAmount("");
       setClientDebtAmount("");
+      setClientWhatsapp("");
       setClientFrequency("monthly");
       setClientNextPaymentAt(getDefaultNextPaymentAt());
       toast.success("Cliente creado.");
@@ -435,6 +439,7 @@ export function ScrumHomePage() {
     setEditingClientName(client.name);
     setEditingClientFrequency(client.frequency);
     setEditingClientNextPaymentAt(client.nextPaymentAt.slice(0, 10));
+    setEditingClientWhatsapp(client.whatsapp ?? "");
     setEditingClientAmountDelta("");
     setEditingClientAmountDeltaDescription("");
   }
@@ -460,7 +465,8 @@ export function ScrumHomePage() {
         body: JSON.stringify({
           name: normalizedName,
           frequency: editingClientFrequency,
-          nextPaymentAt: editingClientNextPaymentAt
+          nextPaymentAt: editingClientNextPaymentAt,
+          whatsapp: editingClientWhatsapp.trim()
         })
       });
 
@@ -579,6 +585,8 @@ export function ScrumHomePage() {
           clientFrequency={clientFrequency}
           clientName={clientName}
           clientNextPaymentAt={clientNextPaymentAt}
+          clientWhatsapp={clientWhatsapp}
+          setClientWhatsapp={setClientWhatsapp}
           clients={clients}
           expandedClientId={expandedClientId}
           now={now}
@@ -632,6 +640,8 @@ export function ScrumHomePage() {
         editingClientName={editingClientName}
         editingClientFrequency={editingClientFrequency}
         editingClientNextPaymentAt={editingClientNextPaymentAt}
+        editingClientWhatsapp={editingClientWhatsapp}
+        setEditingClientWhatsapp={setEditingClientWhatsapp}
         editingClientAmountDelta={editingClientAmountDelta}
         editingClientAmountDeltaDescription={editingClientAmountDeltaDescription}
         isSaving={isSavingClientEdit}

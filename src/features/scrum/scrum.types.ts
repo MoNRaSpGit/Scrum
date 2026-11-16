@@ -62,6 +62,9 @@ export type ClientBilling = {
   amountHistory: ClientAmountChange[];
   // Comision: % del monto que se le da a quien vendio (0 = sin comision).
   commissionPercent?: number;
+  // WhatsApp del cliente (digitos con prefijo de pais). Sin el, no salen los
+  // botones de aviso ni de recibo.
+  whatsapp?: string | null;
   // Materiales/equipo cobrados aparte (no suman a la ganancia mensual).
   equipment?: ClientEquipment | null;
 };
