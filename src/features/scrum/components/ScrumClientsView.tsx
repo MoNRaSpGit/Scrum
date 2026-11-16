@@ -89,6 +89,11 @@ type ScrumClientsViewProps = {
   setExpandedClientId: Dispatch<SetStateAction<number | null>>;
 };
 
+// Buscador (16/11/2026): sin tildes ni mayusculas, "ale" encuentra "Alejandro" y "Álex".
+function normalizeSearch(value: string) {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
 function ClientDebtPanel({
   client,
   onRegisterClientDebtPayment
@@ -196,6 +201,9 @@ export function ScrumClientsView({
   const [clientToDelete, setClientToDelete] = useState<ClientBilling | null>(null);
   // Formulario colapsable (rediseño 22/10/2026), mismo criterio que el tablero.
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const searchKey = normalizeSearch(search);
+  const visibleClients = searchKey ? clients.filter((client) => normalizeSearch(client.name).includes(searchKey)) : clients;
 
   // Ganancia mensual (pedido explicito, 22/10/2026): suma de todos los
   // clientes normalizados a "por mes", para que un cliente que paga cada
@@ -233,6 +241,7 @@ export function ScrumClientsView({
   // Tocar un nombre de las listas de arriba: cierra la lista, abre la ficha de
   // ese cliente y lo trae a la vista (espera un instante a que se despliegue).
   function goToClient(clientId: number) {
+    setSearch("");
     setIsRemainingOpen(false);
     setIsEquipmentOpen(false);
     setExpandedClientId(clientId);
@@ -458,10 +467,24 @@ export function ScrumClientsView({
         ) : null}
       </section>
 
+      {clients.length > 0 ? (
+        <div style={{ position: "relative" }}>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="🔍 Buscar cliente..."
+            aria-label="Buscar cliente"
+            style={{ ...inputStyle, width: "100%", boxSizing: "border-box" }}
+          />
+        </div>
+      ) : null}
+
       <div style={clientGridStyle}>
         {clients.length === 0 ? <p style={emptyStateStyle}>Todavia no hay clientes cargados.</p> : null}
+        {clients.length > 0 && visibleClients.length === 0 ? <p style={emptyStateStyle}>No hay clientes que coincidan con "{search.trim()}".</p> : null}
 
-        {clients.map((client) => {
+        {visibleClients.map((client) => {
           const alertState = getClientAlertState(client.nextPaymentAt, now);
           const alertStyle = CLIENT_ALERT_STYLES[alertState];
           const expanded = expandedClientId === client.id;
