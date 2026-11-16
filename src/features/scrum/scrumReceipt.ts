@@ -30,8 +30,25 @@ function conceptLabel(client: ClientBilling) {
   return client.frequency === "semiannual" ? "Servicio (pago semestral)" : "Servicio mensual";
 }
 
+// Mes y año del pago, en Montevideo (ej. "noviembre de 2026").
+function paidMonthLabel() {
+  return new Intl.DateTimeFormat("es-UY", { timeZone: "America/Montevideo", month: "long", year: "numeric" }).format(new Date());
+}
+
+// (16/11/2026) Mensaje que acompaña al recibo: formal y con una mini
+// descripcion de lo que se pago.
 export function receiptText(client: ClientBilling) {
-  return `Recibo de pago · Logic Lab\nCliente: ${client.name}\nImporte pagado: ${formatCurrency(client.amount)}\nFecha: ${todayLabel()}\nGracias por confiar en Logic Lab.`;
+  const paid =
+    client.frequency === "semiannual"
+      ? `el pago semestral de su servicio (${paidMonthLabel()})`
+      : `el mes de ${paidMonthLabel()} de su servicio`;
+  return `Estimado/a ${client.name}, confirmamos que ha abonado ${paid}, por un importe de ${formatCurrency(client.amount)}. Su próximo vencimiento es el ${formatDate(client.nextPaymentAt)}. Gracias por confiar en Logic Lab.`;
+}
+
+// Solo el mensaje, directo al chat de ESTE cliente (sin imagen ni menu de
+// compartir).
+export function sendReceiptText(client: ClientBilling) {
+  window.open(`https://wa.me/${client.whatsapp ?? ""}?text=${encodeURIComponent(receiptText(client))}`, "_blank", "noopener");
 }
 
 export async function drawReceipt(client: ClientBilling): Promise<Blob> {
