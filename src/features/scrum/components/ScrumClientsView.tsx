@@ -20,7 +20,7 @@ import {
   labelStyle,
   metaChipStyle,
   primaryButtonStyle,
-  remainingListItemStyle,
+  remainingListLinkStyle,
   remainingListStyle,
   remainingListTotalStyle,
   remainingWrapperStyle,
@@ -58,6 +58,7 @@ import {
   summaryTileWarningStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyCommission, getMonthlyNet, getMontevideoDateKey } from "../scrum.utils";
+import { ClientNoticePanel } from "./ClientNoticePanel";
 import { ExpenseModal, ExpensesList, useScrumExpenses, type ScrumExpense } from "./ScrumExpenses";
 import { ClientCommissionPanel } from "./ClientCommissionPanel";
 import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
@@ -220,6 +221,21 @@ export function ScrumClientsView({
   const equipmentPending = clients.reduce((sum, client) => sum + (client.equipment?.remaining ?? 0), 0);
   const remainingThisMonth = pendingClients.reduce((sum, client) => sum + client.amount, 0);
   const [isRemainingOpen, setIsRemainingOpen] = useState(false);
+  const [isEquipmentOpen, setIsEquipmentOpen] = useState(false);
+  // Quien debe equipos, con cuanto (16/11/2026, pedido explicito): misma idea
+  // que la lista de "Resta este mes".
+  const equipmentDebtors = clients.filter((client) => (client.equipment?.remaining ?? 0) > 0);
+
+  // Tocar un nombre de las listas de arriba: cierra la lista, abre la ficha de
+  // ese cliente y lo trae a la vista (espera un instante a que se despliegue).
+  function goToClient(clientId: number) {
+    setIsRemainingOpen(false);
+    setIsEquipmentOpen(false);
+    setExpandedClientId(clientId);
+    window.setTimeout(() => {
+      document.getElementById(`scrum-client-${clientId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     onCreateClient(event);
@@ -263,9 +279,34 @@ export function ScrumClientsView({
               <ExpensesList expenses={expenses} total={expensesTotal} onAdd={() => setExpenseModal({ expense: null })} onEdit={(expense) => setExpenseModal({ expense })} />
             </div>
           ) : null}
-          <div style={summaryTileAltStyle}>
-            <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos por cobrar</span>
-            <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentPending)}</strong>
+          <div style={remainingWrapperStyle}>
+            <button
+              type="button"
+              onClick={() => setIsEquipmentOpen((current) => !current)}
+              style={{ ...summaryTileAltStyle, width: "100%", boxSizing: "border-box", cursor: "pointer" }}
+              aria-expanded={isEquipmentOpen}
+            >
+              <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos por cobrar {isEquipmentOpen ? "▴" : "▾"}</span>
+              <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentPending)}</strong>
+            </button>
+            {isEquipmentOpen ? (
+              <div style={{ ...remainingListStyle, left: 0, right: "auto", width: "min(320px, 86vw)" }}>
+                {equipmentDebtors.length === 0 ? (
+                  <span style={columnCaptionStyle}>No hay equipos por cobrar.</span>
+                ) : (
+                  equipmentDebtors.map((client) => (
+                    <button key={client.id} type="button" onClick={() => goToClient(client.id)} style={remainingListLinkStyle}>
+                      <strong>{client.name}</strong>
+                      <strong>{formatCurrency(client.equipment?.remaining ?? 0)}</strong>
+                    </button>
+                  ))
+                )}
+                <div style={remainingListTotalStyle}>
+                  <span>Total</span>
+                  <strong>{formatCurrency(equipmentPending)}</strong>
+                </div>
+              </div>
+            ) : null}
           </div>
           <div style={summaryTileCommissionStyle}>
             <span style={{ ...summaryTileLabelStyle, color: "#6ee7b7" }}>Comisión</span>
@@ -287,13 +328,13 @@ export function ScrumClientsView({
                   <span style={columnCaptionStyle}>No queda nadie por cobrar este mes.</span>
                 ) : (
                   pendingClients.map((client) => (
-                    <div key={client.id} style={remainingListItemStyle}>
+                    <button key={client.id} type="button" onClick={() => goToClient(client.id)} style={remainingListLinkStyle}>
                       <span>
                         <strong>{client.name}</strong>{" "}
                         <span style={columnCaptionStyle}>{getClientRelativeLabel(client.nextPaymentAt, now)}</span>
                       </span>
                       <strong>{formatCurrency(client.amount)}</strong>
-                    </div>
+                    </button>
                   ))
                 )}
                 <div style={remainingListTotalStyle}>
@@ -411,7 +452,7 @@ export function ScrumClientsView({
           const debtPendingHere = client.debtRemaining && client.debtRemaining > 0 ? client.debtRemaining : 0;
 
           return (
-            <article key={client.id} style={clientCardAccentStyle(alertStyle.color)}>
+            <article key={client.id} id={`scrum-client-${client.id}`} style={{ ...clientCardAccentStyle(alertStyle.color), scrollMarginTop: 12 }}>
               <button type="button" onClick={() => setExpandedClientId(expanded ? null : client.id)} style={clientRowButtonStyle} aria-expanded={expanded}>
                 <div style={clientHeaderTextStyle}>
                   <strong style={clientNameStyle}>{client.name}</strong>
@@ -469,6 +510,7 @@ export function ScrumClientsView({
 
                     <ClientDebtPanel client={client} onRegisterClientDebtPayment={onRegisterClientDebtPayment} />
 
+                    <ClientNoticePanel client={client} now={now} />
                   </div>
 
                   <button type="button" onClick={() => setClientToDelete(client)} style={clientDeleteLinkStyle}>

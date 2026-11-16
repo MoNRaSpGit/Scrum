@@ -524,6 +524,22 @@ export const remainingListStyle: CSSProperties = {
   boxShadow: SHADOW_SM
 };
 export const remainingListItemStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, color: COLOR.textPrimary, fontSize: 14 };
+// Fila tocable: lleva a la ficha del cliente.
+export const remainingListLinkStyle: CSSProperties = {
+  ...remainingListItemStyle,
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "6px 8px",
+  margin: "0 -8px",
+  background: "transparent",
+  border: "none",
+  borderRadius: RADIUS.md,
+  cursor: "pointer",
+  textAlign: "left",
+  font: "inherit",
+  textDecoration: "underline dotted",
+  textUnderlineOffset: 3
+};
 export const remainingListTotalStyle: CSSProperties = { ...remainingListItemStyle, borderTop: `1px solid ${COLOR.border}`, paddingTop: 8, color: COLOR.warning };
 
 export const earningsChartCardStyle: CSSProperties = {
