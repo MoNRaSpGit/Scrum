@@ -51,15 +51,12 @@ import {
   summaryTileAltStyle,
   summaryTileColors,
   summaryTileCommissionStyle,
-  summaryTileDangerStyle,
-  summaryTileNetStyle,
   summaryTileLabelStyle,
   summaryTileValueStyle,
   summaryTileWarningStyle
 } from "../scrum.styles";
 import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getClientRelativeLabel, getMonthlyCommission, getMonthlyNet, getMontevideoDateKey } from "../scrum.utils";
 import { ClientNoticePanel } from "./ClientNoticePanel";
-import { ExpenseModal, ExpensesList, useScrumExpenses, type ScrumExpense } from "./ScrumExpenses";
 import { ClientCommissionPanel } from "./ClientCommissionPanel";
 import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
@@ -213,10 +210,8 @@ export function ScrumClientsView({
   // ganancia mensual de arriba ya cuenta solo lo que queda para nosotros.
   // Gastos (14/11/2026): se descuentan de la ganancia mensual (bruta) para dar
   // la ganancia neta, lo que queda de verdad.
-  const { expenses, total: expensesTotal, save: saveExpense, remove: removeExpense } = useScrumExpenses();
-  const [isExpensesOpen, setIsExpensesOpen] = useState(false);
-  const [expenseModal, setExpenseModal] = useState<{ expense: ScrumExpense | null } | null>(null);
-  const netEarnings = monthlyEarnings - expensesTotal;
+  // 19/11/2026: se sacaron Gastos y Ganancia neta de la vista (pedido explicito);
+  // queda solo la ganancia bruta. Los gastos guardados no se borraron.
   const monthlyCommission = clients.reduce((sum, client) => sum + getMonthlyCommission(client), 0);
 
   // Resta cobrar este mes (pedido explicito, 05/11/2026): vencidos que
@@ -236,7 +231,19 @@ export function ScrumClientsView({
   const [isEquipmentOpen, setIsEquipmentOpen] = useState(false);
   // Quien debe equipos, con cuanto (16/11/2026, pedido explicito): misma idea
   // que la lista de "Resta este mes".
-  const equipmentDebtors = clients.filter((client) => (client.equipment?.remaining ?? 0) > 0);
+  // 19/11/2026: equipos "mensuales": la cuota de equipo vence el mismo dia que la
+  // cuota del cliente. La tarjeta muestra lo que se cobra en la proxima vuelta
+  // (una cuota por cliente, o lo que le falte si es menos), con su fecha.
+  const equipmentDebtors = clients
+    .filter((client) => (client.equipment?.remaining ?? 0) > 0)
+    .map((client) => ({
+      client,
+      due: client.nextPaymentAt,
+      installment: Math.min(client.equipment?.installmentAmount ?? 0, client.equipment?.remaining ?? 0),
+      left: client.equipment?.installmentsLeft ?? 0
+    }))
+    .sort((a, b) => a.due.localeCompare(b.due));
+  const equipmentNextTotal = equipmentDebtors.reduce((sum, item) => sum + item.installment, 0);
 
   // Tocar un nombre de las listas de arriba: cierra la lista, abre la ficha de
   // ese cliente y lo trae a la vista (espera un instante a que se despliegue).
@@ -264,34 +271,6 @@ export function ScrumClientsView({
             <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.accent[0] }}>Ganancia bruta</span>
             <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.accent[1] }}>{formatCurrency(monthlyEarnings)}</strong>
           </div>
-          <div style={{ ...summaryTileDangerStyle, position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => setIsExpensesOpen((current) => !current)}
-              aria-expanded={isExpensesOpen}
-              style={{ all: "unset", cursor: "pointer", display: "grid", gap: 2 }}
-            >
-              <span style={{ ...summaryTileLabelStyle, color: "#ff8aa3" }}>Gastos {isExpensesOpen ? "▴" : "▾"}</span>
-              <strong style={{ ...summaryTileValueStyle, color: "#fb4570" }}>{formatCurrency(expensesTotal)}</strong>
-            </button>
-            <button
-              type="button"
-              onClick={() => setExpenseModal({ expense: null })}
-              aria-label="Agregar gasto"
-              style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 999, border: "1px solid rgba(251, 69, 112, 0.5)", background: "rgba(251, 69, 112, 0.18)", color: "#ff8aa3", fontSize: 18, lineHeight: 1, cursor: "pointer" }}
-            >
-              +
-            </button>
-          </div>
-          <div style={{ ...summaryTileNetStyle, gridColumn: "1 / -1" }}>
-            <span style={{ ...summaryTileLabelStyle, color: "#7dd3fc" }}>Ganancia neta (después de gastos)</span>
-            <strong style={{ ...summaryTileValueStyle, fontSize: 28, color: netEarnings < 0 ? "#fb4570" : "#eef1fb" }}>{formatCurrency(netEarnings)}</strong>
-          </div>
-          {isExpensesOpen ? (
-            <div style={{ gridColumn: "1 / -1" }}>
-              <ExpensesList expenses={expenses} total={expensesTotal} onAdd={() => setExpenseModal({ expense: null })} onEdit={(expense) => setExpenseModal({ expense })} />
-            </div>
-          ) : null}
           <div style={remainingWrapperStyle}>
             <button
               type="button"
@@ -299,24 +278,30 @@ export function ScrumClientsView({
               style={{ ...summaryTileAltStyle, width: "100%", boxSizing: "border-box", cursor: "pointer" }}
               aria-expanded={isEquipmentOpen}
             >
-              <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos por cobrar {isEquipmentOpen ? "▴" : "▾"}</span>
-              <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentPending)}</strong>
+              <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos · próximo cobro {isEquipmentOpen ? "▴" : "▾"}</span>
+              <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentNextTotal)}</strong>
+              <span style={{ ...columnCaptionStyle, fontSize: 11 }}>falta en total {formatCurrency(equipmentPending)}</span>
             </button>
             {isEquipmentOpen ? (
-              <div style={{ ...remainingListStyle, left: 0, right: "auto", width: "min(320px, 86vw)" }}>
+              <div style={{ ...remainingListStyle, left: 0, right: "auto", width: "min(340px, 86vw)" }}>
                 {equipmentDebtors.length === 0 ? (
                   <span style={columnCaptionStyle}>No hay equipos por cobrar.</span>
                 ) : (
-                  equipmentDebtors.map((client) => (
+                  equipmentDebtors.map(({ client, due, installment, left }) => (
                     <button key={client.id} type="button" onClick={() => goToClient(client.id)} style={remainingListLinkStyle}>
-                      <strong>{client.name}</strong>
-                      <strong>{formatCurrency(client.equipment?.remaining ?? 0)}</strong>
+                      <span style={{ display: "grid", gap: 2, textAlign: "left" }}>
+                        <strong>{client.name}</strong>
+                        <span style={{ ...columnCaptionStyle, fontSize: 11 }}>
+                          vence {formatDate(due)} · {left === 1 ? "última cuota" : `quedan ${left} cuotas`}
+                        </span>
+                      </span>
+                      <strong>{formatCurrency(installment)}</strong>
                     </button>
                   ))
                 )}
                 <div style={remainingListTotalStyle}>
-                  <span>Total</span>
-                  <strong>{formatCurrency(equipmentPending)}</strong>
+                  <span>Próximo cobro</span>
+                  <strong>{formatCurrency(equipmentNextTotal)}</strong>
                 </div>
               </div>
             ) : null}
@@ -358,9 +343,6 @@ export function ScrumClientsView({
             ) : null}
           </div>
         </div>
-        {expenseModal ? (
-          <ExpenseModal expense={expenseModal.expense} onClose={() => setExpenseModal(null)} onSave={saveExpense} onDelete={removeExpense} />
-        ) : null}
       </header>
 
       <section style={{ display: "grid", gap: 10 }}>
