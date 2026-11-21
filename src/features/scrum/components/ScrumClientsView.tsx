@@ -59,6 +59,7 @@ import { formatCurrency, formatDate, formatDateTime, getClientAlertState, getCli
 import { ClientNoticePanel } from "./ClientNoticePanel";
 import { ClientCommissionPanel } from "./ClientCommissionPanel";
 import { ClientEquipmentPanel } from "./ClientEquipmentPanel";
+import { EquipmentModal } from "./EquipmentModal";
 import { ScrumConfirmModal } from "./ScrumConfirmModal";
 
 type ScrumClientsViewProps = {
@@ -278,32 +279,17 @@ export function ScrumClientsView({
               style={{ ...summaryTileAltStyle, width: "100%", boxSizing: "border-box", cursor: "pointer" }}
               aria-expanded={isEquipmentOpen}
             >
-              <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos · próximo cobro {isEquipmentOpen ? "▴" : "▾"}</span>
+              <span style={{ ...summaryTileLabelStyle, color: summaryTileColors.alt[0] }}>Equipos · próximo cobro ›</span>
               <strong style={{ ...summaryTileValueStyle, color: summaryTileColors.alt[1] }}>{formatCurrency(equipmentNextTotal)}</strong>
               <span style={{ ...columnCaptionStyle, fontSize: 11 }}>falta en total {formatCurrency(equipmentPending)}</span>
             </button>
             {isEquipmentOpen ? (
-              <div style={{ ...remainingListStyle, left: 0, right: "auto", width: "min(340px, 86vw)" }}>
-                {equipmentDebtors.length === 0 ? (
-                  <span style={columnCaptionStyle}>No hay equipos por cobrar.</span>
-                ) : (
-                  equipmentDebtors.map(({ client, due, installment, left }) => (
-                    <button key={client.id} type="button" onClick={() => goToClient(client.id)} style={remainingListLinkStyle}>
-                      <span style={{ display: "grid", gap: 2, textAlign: "left" }}>
-                        <strong>{client.name}</strong>
-                        <span style={{ ...columnCaptionStyle, fontSize: 11 }}>
-                          vence {formatDate(due)} · {left === 1 ? "última cuota" : `quedan ${left} cuotas`}
-                        </span>
-                      </span>
-                      <strong>{formatCurrency(installment)}</strong>
-                    </button>
-                  ))
-                )}
-                <div style={remainingListTotalStyle}>
-                  <span>Próximo cobro</span>
-                  <strong>{formatCurrency(equipmentNextTotal)}</strong>
-                </div>
-              </div>
+              <EquipmentModal
+                clients={clients}
+                onClose={() => setIsEquipmentOpen(false)}
+                onClientChanged={onClientChanged}
+                onOpenClient={(clientId) => goToClient(clientId)}
+              />
             ) : null}
           </div>
           <div style={summaryTileCommissionStyle}>
